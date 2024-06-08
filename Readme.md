@@ -8,7 +8,7 @@ A lot of the game's shaders are replaced with entirely new ones to make this wor
 Please read the mod compatibility list, current benefits and limitations sections.
 # Current benefits
 ## Better ambient lighting
-Ambient is now applied to the scene using the stock reflection probe. This is something that TexturesUnllimited already did but only for parts, this is now applied for everything in the scene including terrain, buildings etc.
+Ambient is now applied to the scene using the stock reflection probe. This is something that TexturesUnlimited already did but only for parts, this is now applied for everything in the scene including terrain, buildings etc.
 
 Left: Stock. Right: New lighting
 
@@ -26,7 +26,7 @@ One of the main advantages of deferred rendering is eliminating the prohibitive 
 Make sure  to set your pixel light setting to the maximum in the game settings to take full advantage of this
 # Known issues
 ## Terrain shader support
-As stock shaders are incompatible with deferred rendering, the terrain shaders are replaced with entirely new ones implemented from scratch to approximate the functionality of the stock ones. For now only the "Ultra" setting terrain shaders are replaced, meaning other settings won't work.
+As stock shaders are incompatible with deferred rendering, the terrain shaders are replaced with entirely new ones implemented from scratch to approximate the functionality of the stock ones. For now only the "Ultra" setting terrain shaders are replaced, meaning other settings won't work. That includes the regular, non-atlas ultra shader used on all the bodies (outside of Kerbin) to be clear (PQSTriplanarZoomRotation).
 As these are new shaders you might notice increased tiling in some areas, and slightly different colors.
 **Examples**
 Mistmach between runway grass and terrain color
@@ -52,27 +52,28 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | EVE-Redux | Compatible |
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
 | TUFX | Compatible apart from ambient occlusion
-| Shaddy | Unknown/untested
+| Shaddy | Renders in forward
 | Kopernicus | Untested, same limitations to terrain shaders apply as stock (only stock Ultra terrain shaders supported for now)
 | RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
-| Waterfall | Unknown/untested
+| Waterfall | Compatible
 | Engine Lighting | Unknown/untested
+| ModuleDepthMask | Incompatible |
 
 # Debug menu
 Using alt+d will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
 
-Transparencies and incompatible forward shaders will render on top of the debug visualization, ignoring the g-buffer mode selected. This can also be used to dientify incompatible/forward shaders (ignoring transparencies)
+Transparencies and incompatible forward shaders will render on top of the debug visualization, ignoring the g-buffer mode selected. This can also be used to identify incompatible/forward shaders (ignoring transparencies)
 
 ![enter image description here](https://i.imgur.com/ZgSDZnu.jpeg)
 
 # Stencil buffer usage
-Only 4 bits of the stencil buffer appear to be available in deferred redering for reasons.
-Stencil buffer is useful for applying post effects selectively to certain surfaces, we can take advantage of it here because of using new shaders. I propose the following stencil values be used for masking:
+Only 4 bits of the stencil buffer appear to be available in deferred rendering because reasons.
+Stencil buffer is useful for applying post effects selectively to certain surfaces, we can take advantage of it here since we are using new shaders and can implement stencil everywhere. I propose the following stencil values be used for masking, they are already used by this mod for replaced shaders:
 
 | Surface/Shader type | Stencil bit| Stencil value | Notes |
 | ------------- | ------------- |------------- |------------- |
-| Terrain (stock/parallax)  | 0	| 1 | Already used in this mod to emulate the alpha PQS to scaled fade, since it is impossible to do alpha blending otherwise in deferred (dithering looked really bad here)|
+| Terrain (stock/parallax)  | 0	| 1 | Already used in this mod to emulate the alpha PQS to scaled fade, since it is impossible to do alpha blending otherwise in deferred (dithering looked really bad here and caused other issues with visual mods)|
 | Parallax grass | 1 |	2 | Parallax grass has normals that point upwards, matching the terrain and not the grass itself so it might be worthwhile to have a separate stencil value for it, for any image effects that might need accurate normals|
 | Local scenery (buildings + stock/parallax scatters)  | 2|	4 | |
 | Parts  | 3|	8 | |
