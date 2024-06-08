@@ -1,0 +1,120 @@
+﻿using UnityEngine;
+using System.Linq;
+using UnityEngine.SceneManagement;
+
+namespace Deferred
+{
+    [KSPAddon(KSPAddon.Startup.EditorAny, false)]
+    public class EditorLighting : MonoBehaviour
+    {
+        SubpixelMorphologicalAntialiasing smaaScript = null;
+        Settings setttings;
+
+        private void Start()
+        {
+            // Detect soft scene changes between editors
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            Apply();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Apply();
+        }
+
+        private void Apply()
+        {
+            HandleSMAA();
+            FixLighting();
+        }
+
+        private static void FixLighting()
+        {
+            TweakReflections();
+
+            FixVABProps();
+            FixSPHLights();
+        }
+
+        private static void FixSPHLights()
+        {
+            GameObject sphSpotLight = GameObject.Find("Realtime_SpotlightCraft");
+
+            if (sphSpotLight != null)
+            {
+                var light = sphSpotLight.GetComponent<Light>();
+
+                if (light != null)
+                {
+                    light.range = 500f;
+                    light.spotAngle = 130f;
+                    light.innerSpotAngle = 100f;
+                    light.intensity = 0.7f;
+                }
+            }
+
+            GameObject sphWindowLight = GameObject.Find("Realtime_SpotlightWindow");
+
+            if (sphWindowLight != null)
+            {
+                var light = sphWindowLight.GetComponent<Light>();
+
+                if (light != null)
+                {
+                    light.range = 500f;
+                    light.spotAngle = 130f;
+                    light.innerSpotAngle = 100f;
+                    light.intensity = 0.3f;
+                }
+            }
+        }
+
+        // Tone down VAB/SPH reflection intensity so things look mostly like they do in flight
+        private static void TweakReflections()
+        {
+            RenderSettings.reflectionIntensity = 0.6f;
+        }
+
+        private static void FixVABProps()
+        {
+            // Bring the VAB props to the layer that gets lit by the main light, otherwise they look too dark
+            GameObject vabProps = GameObject.Find("model_vab_interior_props_v16");
+
+            if (vabProps != null)
+            {
+                vabProps.layer = 0;
+            }
+        }
+
+        private void HandleSMAA()
+        {
+            var settings = Settings.LoadSettings();
+            var editorCamera = Camera.allCameras.FirstOrDefault(_cam => _cam.name == "Main Camera");
+
+            if (editorCamera != null)
+            {
+                var smaa = editorCamera.gameObject.GetComponent<SubpixelMorphologicalAntialiasing>();
+                if (smaa != null)
+                {
+                    Destroy(smaa);
+                }
+
+                if (settings.useSmaaInEditors)
+                {
+                    smaaScript = editorCamera.gameObject.AddComponent<SubpixelMorphologicalAntialiasing>();
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            if (smaaScript != null)
+            {
+                Destroy(smaaScript);
+            }
+        }
+    }
+}
