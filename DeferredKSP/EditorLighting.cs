@@ -26,16 +26,13 @@ namespace Deferred
         private void Apply()
         {
             HandleSMAA();
-            FixLighting();
+            FixScene();
         }
 
-        private static void FixLighting()
+        private static void FixScene()
         {
-            TweakReflections();
-
             FixVABProps();
             FixSPHLights();
-
             FixShadowReceiver();
         }
 
@@ -87,12 +84,6 @@ namespace Deferred
                     mr.material.renderQueue = originalRenderqueue;
                 }
             }
-        }
-
-        // Tone down VAB/SPH reflection intensity so things look mostly like they do in flight
-        private static void TweakReflections()
-        {
-            RenderSettings.reflectionIntensity = 0.6f;
         }
 
         private static void FixVABProps()

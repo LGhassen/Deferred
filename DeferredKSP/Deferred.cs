@@ -135,6 +135,7 @@ namespace Deferred
             var settings = Settings.LoadSettings();
             Shader.SetGlobalFloat("deferredAmbientBrightness", settings.ambientBrightness);
             Shader.SetGlobalFloat("deferredAmbientTint", settings.ambientTint);
+            Shader.SetGlobalInt("editorLightingMode", HighLogic.LoadedSceneIsEditor ? 1 : 0);
         }
 
         // Replaces stock shaders which don't have deferred passes with replacements that do
