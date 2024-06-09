@@ -8,7 +8,7 @@ namespace Deferred
 {
     public class ShaderLoader
     {
-        private Dictionary<string, Shader> replacementShaders, deferredShaders;
+        private Dictionary<string, Shader> deferredShaders, replacementShaders;
         private Dictionary<string, Texture> loadedTextures = new Dictionary<string, Texture>();
 
         private static ShaderLoader instance;
@@ -30,7 +30,7 @@ namespace Deferred
 
         private ShaderLoader()
         {
-            replacementShaders = LoadAssetBundle("replacementshaders");
+            replacementShaders = LoadAssetBundle("replacementshaders.shab");
             deferredShaders = LoadAssetBundle("deferredshaders", loadedTextures);
         }
 

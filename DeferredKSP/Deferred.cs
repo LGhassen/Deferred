@@ -15,9 +15,11 @@ namespace Deferred
         private List<Camera> targetCameras = new List<Camera>();
         private bool gbufferDebugModeEnabled = false;
 
+        private static bool incompatibleShadersReplacedInExistingMaterials = false;
+
         private void Init()
         {
-            ReplaceIncompatibleShaders();
+            ReplaceIncompatibleShadersInExistingMaterials();
 
             SetupCustomReflectionsAndAmbient();
 
@@ -136,27 +138,32 @@ namespace Deferred
         }
 
         // Replaces stock shaders which don't have deferred passes with replacements that do
-        // This isn't solid and needs to be done on all scene changes, also is missing from kerbal backpacks and in-editor fairings
-        // maybe look into a method to replace the already loaded shaders like Shader.Find or bundles or something else
-        private void ReplaceIncompatibleShaders()
+        // Only done once at the main menu for already existing materials
+        // Newer materials get the replaced shaders from shabby which replaces Shader.Find
+        private void ReplaceIncompatibleShadersInExistingMaterials()
         {
-            Debug.Log("[Deferred] Replacing shaders for deferred rendering");
+            if (!incompatibleShadersReplacedInExistingMaterials && HighLogic.LoadedScene == GameScenes.MAINMENU)
+            { 
+                Debug.Log("[Deferred] Replacing shaders for deferred rendering");
 
-            foreach (Material mat in Resources.FindObjectsOfTypeAll<Material>())
-            {
-                string name = mat.shader.name;
-
-                // Some materials have overridden renderqueues not matching the shader ones
-                // These get overridden by replacing the shader
-                // Keep the original ones because they are important for parts with depthMasks
-                int originalRenderqueue = mat.renderQueue;
-
-                if (ShaderLoader.Instance.ReplacementShaders.TryGetValue(name, out Shader replacementShader))
+                foreach (Material mat in Resources.FindObjectsOfTypeAll<Material>())
                 {
-                    mat.shader = replacementShader;
+                    string name = mat.shader.name;
+
+                    // Some materials have overridden renderqueues not matching the shader ones
+                    // These get overridden by replacing the shader
+                    // Keep the original ones because they are important for parts with depthMasks
+                    int originalRenderqueue = mat.renderQueue;
+
+                    if (ShaderLoader.Instance.ReplacementShaders.TryGetValue(name, out Shader replacementShader))
+                    {
+                        mat.shader = replacementShader;
+                    }
+
+                    mat.renderQueue = originalRenderqueue;
                 }
 
-                mat.renderQueue = originalRenderqueue;
+                incompatibleShadersReplacedInExistingMaterials = true;
             }
         }
 

@@ -1,9 +1,6 @@
 ﻿using UnityEditor;
-using UnityEngine;
-using System;
 using System.Linq;
 using System.IO;
-using System.Collections;
 
 namespace Deferred
 {
@@ -27,6 +24,20 @@ namespace Deferred
 			{
 				File.Delete(file);
 			}
+
+            // Rename replacementshaders to replacementshaders.shab so it gets loaded by shabby
+            string shaderFile = Path.Combine(outDir, "replacementshaders");
+            string shaderFileRenamed = shaderFile + ".shab";
+
+            if (File.Exists(shaderFile))
+            {
+                if (File.Exists(shaderFileRenamed))
+                {
+                    File.Delete(shaderFileRenamed);
+                }
+
+                File.Move(shaderFile, shaderFileRenamed);
+            }
         }
     }
 

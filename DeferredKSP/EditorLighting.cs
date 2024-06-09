@@ -35,6 +35,8 @@ namespace Deferred
 
             FixVABProps();
             FixSPHLights();
+
+            FixShadowReceiver();
         }
 
         private static void FixSPHLights()
@@ -66,6 +68,23 @@ namespace Deferred
                     light.spotAngle = 130f;
                     light.innerSpotAngle = 100f;
                     light.intensity = 0.3f;
+                }
+            }
+        }
+
+        private static void FixShadowReceiver()
+        {
+            GameObject shadowPlane = GameObject.Find("ShadowPlane");
+
+            if (shadowPlane != null)
+            {
+                var mr = shadowPlane.GetComponent<MeshRenderer>();
+
+                if (mr != null && mr.material != null)
+                {
+                    int originalRenderqueue = mr.material.renderQueue;
+                    mr.material.shader = ShaderLoader.Instance.ReplacementShaders["KSP/Scenery/Invisible Shadow Receiver"];
+                    mr.material.renderQueue = originalRenderqueue;
                 }
             }
         }
