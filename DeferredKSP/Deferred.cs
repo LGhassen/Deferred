@@ -146,10 +146,17 @@ namespace Deferred
             {
                 string name = mat.shader.name;
 
+                // Some materials have overridden renderqueues not matching the shader ones
+                // These get overridden by replacing the shader
+                // Keep the original ones because they are important for parts with depthMasks
+                int originalRenderqueue = mat.renderQueue;
+
                 if (ShaderLoader.Instance.ReplacementShaders.TryGetValue(name, out Shader replacementShader))
                 {
                     mat.shader = replacementShader;
                 }
+
+                mat.renderQueue = originalRenderqueue;
             }
         }
 
