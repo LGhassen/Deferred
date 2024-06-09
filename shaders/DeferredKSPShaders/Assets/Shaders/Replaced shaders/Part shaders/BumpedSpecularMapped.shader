@@ -5,6 +5,7 @@ Shader "KSP/Bumped Specular (Mapped)"
         _MainTex("Color Map", 2D) = "gray" {}
         _BumpMap("Normal Map", 2D) = "bump" {}
         _Emissive("Emissive Map", 2D) = "white" {}
+        _SpecMap ("Specular Map", 2D) = "white"{}
         _Shininess ("Shininess", Range (0.0, 1.0)) = 0.5
         _Color ("Part Color", Color) = (1.0, 1.0, 1.0, 1.0)
         _SpecColor ("Specular Color", Color) = (0.5, 0.5, 0.5, 1.0)
@@ -28,11 +29,9 @@ Shader "KSP/Bumped Specular (Mapped)"
         CGPROGRAM
 
         #define NORMALMAP_ON
-        #define SPECULAR_ON
-        #define METALLIC_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard
+        #pragma surface DeferredSpecularMappedReplacementShader StandardSpecular
         #pragma target 3.0
 
         ENDCG

@@ -36,6 +36,8 @@ struct Input
     float2 uv2_LightMap;
 #endif
     
+    float2 uv_SpecMap;
+    
     float3 worldPos;
     float3 viewDir;
     float4 screenPos;
@@ -101,4 +103,34 @@ void DeferredSurfaceReplacementShader(Input i, inout SurfaceOutputStandard o)
 #if defined (FORWARD_FADE_ON)
     o.Alpha = _Opacity * color.a;
 #endif
+}
+
+
+sampler2D _SpecMap;
+
+void DeferredSpecularMappedReplacementShader(Input i, inout SurfaceOutputStandardSpecular o)
+{
+    float4 vertexColor = i.color;
+    float4 color = _Color * vertexColor * _BurnColor * tex2D(_MainTex, (i.uv_MainTex));
+    float3 specularColor = tex2D(_SpecMap, (i.uv_SpecMap)).rgb;
+    
+#if defined (NORMALMAP_ON)
+    float3 normal = UnpackNormalDXT5nm(tex2D(_BumpMap, i.uv_BumpMap));
+#else
+    float3 normal = float3(0.0, 0.0, 1.0);
+#endif
+    
+#if defined (EMISSIVEMAP_ON)
+    float3 emissionMap = _EmissiveColor.a * _EmissiveColor.rgb * tex2D(_Emissive, i.uv_Emissive).rgb;
+#else 
+    float3 emissionMap = 0.0.xxx;
+#endif
+    
+    o.Albedo = color.rgb;
+    o.Normal = normal;
+    o.Emission = emissionMap + GetEmission(i.viewDir, o.Normal);
+    o.Smoothness = _Shininess; // This is how the stock Mapped shaders work unfortunately, ignoring
+                               // the alpha channel of the color texture. Going to keep the same
+                               // behaviour for compatibility with all the existing part mods
+    o.Specular = specularColor;
 }
