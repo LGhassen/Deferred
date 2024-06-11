@@ -32,7 +32,7 @@ Shader "KSP/Lightwrapped/Specular"
         #define EMISSIVEMAP_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular 
         #pragma target 3.0
 
         ENDCG

@@ -32,7 +32,6 @@ Shader "KSP/Scenery/Diffuse Ground KSC Specular"
 
         CGPROGRAM
         #include "../Emission.cginc"
-        #include "../LegacyToStandard.cginc"
         #pragma surface surf Standard vertex:vertexShader
         #pragma target 3.0
 
@@ -100,12 +99,13 @@ Shader "KSP/Scenery/Diffuse Ground KSC Specular"
             float4 color = lerp(grass, _TarmacColor * groundColor, blendMask);
             float3 normal = lerp(grassNormal, groundNormal, blendMask);
 
-            // Output as usual
-            o.Smoothness = GetSmoothnessFromLegacyParams(_SpecularColor, 0.35, color.a);
+            // I didn't follow my usual blinn-phong conversion logic here and went with something that looks better
+            // since this shader is only used in one place and with one set of textures
+            o.Smoothness = 0.75 * sqrt(sqrt(max(color.a, 0.0000001)));
+
             o.Albedo = color;
             o.Normal = normal;
             o.Emission = GetEmission(i.viewDir, o.Normal);
-            o.Metallic = 0.0;
         }
         ENDCG
     }

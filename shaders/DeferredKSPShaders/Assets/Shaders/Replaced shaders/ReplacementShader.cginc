@@ -43,7 +43,7 @@ struct Input
     float4 screenPos;
 };
 
-void DeferredSurfaceReplacementShader(Input i, inout SurfaceOutputStandard o)
+void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecular o)
 {
     o.Occlusion = 1.0;
     
@@ -65,7 +65,7 @@ void DeferredSurfaceReplacementShader(Input i, inout SurfaceOutputStandard o)
 #else
     float3 normal = float3(0.0, 0.0, 1.0);
 #endif
-    
+
 #if defined (EMISSIVEMAP_ON)
     float3 emissionMap = _EmissiveColor.a * _EmissiveColor.rgb * tex2D(_Emissive, i.uv_Emissive).rgb;
 #elif defined(EMISSIVE_LIGHTMAP_ON)
@@ -77,28 +77,22 @@ void DeferredSurfaceReplacementShader(Input i, inout SurfaceOutputStandard o)
     float3 emissionMap = 0.0.xxx;
 #endif
 
-#if defined (METALLIC_ON)
-    o.Smoothness = sqrt(_Shininess * color.a);
-#elif defined (SPECULAR_ON)
-    o.Smoothness = GetSmoothnessFromLegacyParams(_SpecColor, _Shininess, color.a);
+#if defined (SPECULAR_ON)
+    GetStandardSpecularPropertiesFromLegacy(_Shininess, color.a, _SpecColor, o.Smoothness, o.Specular);
 #else
-    o.Smoothness = GetSmoothnessFromLegacyParams(1.0.xxx, 0.35, color.a); // idk, just some settigs that work ok for diffuse parts
-
+    GetStandardSpecularPropertiesFromLegacy(0.5, color.a, 0.5.xxx, o.Smoothness, o.Specular); // Just some settigs that work ok for diffuse parts
+    
     if (color.a >= 0.99)
     {
         o.Smoothness = 0.45; // Some IVAs have color.a always set to 1.0 so we can't rely on that or the IVAs are ultra shiny
+                             // Especially since diffuse parts weren't supposed to have specular maps but some parts have them anyway
     }
+    
 #endif
     
     o.Albedo = color.rgb;
     o.Normal = normal;
     o.Emission = emissionMap + GetEmission(i.viewDir, o.Normal);
-    
-#if defined (METALLIC_ON)
-    o.Metallic = 1.0;
-#else
-    o.Metallic = 0.0;
-#endif
     
 #if defined (FORWARD_FADE_ON)
     o.Alpha = _Opacity * color.a;

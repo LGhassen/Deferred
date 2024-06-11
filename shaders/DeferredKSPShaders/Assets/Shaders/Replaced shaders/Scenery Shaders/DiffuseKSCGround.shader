@@ -86,12 +86,13 @@ Shader "KSP/Scenery/Diffuse Ground KSC"
             // Blend between groundColor and grass based on the blend mask, this appears to be working correctly
             float4 color = lerp(grass, _TarmacColor * groundColor, blendMask);
 
-            o.Smoothness = GetSmoothnessFromLegacyParams(1.0.xxx, 0.35, color.a); // idk, just some settigs that work ok for diffuse parts
+            // I didn't follow my usual blinn-phong conversion logic here and went with something that looks better
+            // since this shader is only used in one place and with one set of textures
+            o.Smoothness = 0.75 * sqrt(sqrt(max(color.a, 0.0000001)));
 
             o.Albedo = color.rgb;
             o.Normal = float3(0.0, 0.0, 1.0);
             o.Emission = GetEmission(i.viewDir, o.Normal);
-            o.Metallic = 0.0;
         }
         ENDCG
     }

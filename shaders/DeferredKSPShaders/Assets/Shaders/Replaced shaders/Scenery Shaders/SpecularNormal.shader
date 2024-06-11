@@ -32,7 +32,7 @@ Shader "KSP/Scenery/Specular Normal"
         #define SPECULAR_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular 
         #pragma target 3.0
 
         ENDCG

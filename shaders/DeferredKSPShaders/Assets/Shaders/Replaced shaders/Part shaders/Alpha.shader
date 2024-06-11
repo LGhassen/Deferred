@@ -27,7 +27,7 @@ Shader "KSP/Alpha/Translucent"
         #define EMISSIVEMAP_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard alpha:fade
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular alpha:fade
         #pragma target 3.0
 
         ENDCG

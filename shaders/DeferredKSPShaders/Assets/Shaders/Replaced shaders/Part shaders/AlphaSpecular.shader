@@ -28,7 +28,7 @@ Shader "KSP/Alpha/Translucent Specular"
         #define SPECULAR_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard alpha:fade
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular alpha:fade
         #pragma target 3.0
 
         ENDCG

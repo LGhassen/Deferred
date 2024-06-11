@@ -26,12 +26,12 @@ Shader "KSP/Emissive/Specular"
         }
 
         CGPROGRAM
-        
+
+        #define EMISSIVE_ON
         #define SPECULAR_ON
-        #define EMISSIVEMAP_ON
 
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard
+        #pragma surface DeferredSpecularReplacementShader StandardSpecular
         #pragma target 3.0
 
         ENDCG

@@ -27,7 +27,7 @@ Shader "KSP/Diffuse"
 
         CGPROGRAM
         #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular
         #pragma target 3.0
 
         ENDCG

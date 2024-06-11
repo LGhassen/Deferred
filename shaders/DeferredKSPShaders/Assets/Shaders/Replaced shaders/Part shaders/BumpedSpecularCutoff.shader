@@ -40,8 +40,8 @@ Shader "KSP/Bumped Specular (Cutoff)"
         #define IGNORE_VERTEX_COLOR_ON
         #define DITHER_FADE_ON
 
-        #include "../ReplacementShader.cginc"
-        #pragma surface DeferredSurfaceReplacementShader Standard //exclude_path:forward
+        #include "../ReplacementShader.cginc" //exclude_path:forward
+		#pragma surface DeferredSpecularReplacementShader StandardSpecular 
         #pragma target 3.0
 
         ENDCG
