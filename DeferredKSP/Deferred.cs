@@ -225,6 +225,7 @@ namespace Deferred
 
         private void Start()
         {
+            windowId = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
             StartCoroutine(DelayedInit());
         }
 
@@ -253,7 +254,7 @@ namespace Deferred
         }
 
         bool showUI=false;
-        int windowId = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+        int windowId;
         Rect windowRect = new Rect(20, 50, 200, 150);
 
         void OnGUI()
