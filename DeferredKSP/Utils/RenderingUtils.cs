@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.XR;
+using System.Linq;
 
 namespace Deferred
 {
@@ -60,6 +61,11 @@ namespace Deferred
         public static bool VREnabled()
         {
             return XRSettings.loadedDeviceName != string.Empty;
+        }
+
+        public static Camera FindCamera(string name)
+        {
+            return Camera.allCameras.FirstOrDefault(_cam => _cam.name == name);
         }
     }
 }

@@ -29,11 +29,12 @@ namespace Deferred
             FixScene();
         }
 
-        private static void FixScene()
+        private void FixScene()
         {
             FixVABProps();
             FixSPHLights();
             FixShadowReceiver();
+            FixReflections();
         }
 
         private static void FixSPHLights()
@@ -97,6 +98,44 @@ namespace Deferred
             }
         }
 
+        GameObject probeGo;
+
+        private void FixReflections()
+        {
+            // Disable the default KSP VAB/SPH cuebmaps which don't have the same convolution as reflectionprobes causing materials to appear way glossier
+            RenderSettings.customReflection = null;
+            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+
+            // Spawn an accurate probe, but only render reflections on startup
+            if (probeGo != null)
+            {
+                probeGo.DestroyGameObject();
+            }
+
+            probeGo = new GameObject("Deferred VAB/SPH Reflection Probe");
+            probeGo.transform.position = new Vector3(0f, 10f, 0f);
+
+            var probe = probeGo.AddComponent<ReflectionProbe>();
+
+            probe.resolution = Mathf.Max(1024, GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION);
+            probe.size = new Vector3(1000000f, 1000000f, 1000000f);
+            probe.cullingMask = 1 << 15;
+            probe.shadowDistance = 0.0f;
+            probe.clearFlags = UnityEngine.Rendering.ReflectionProbeClearFlags.Skybox;
+            probe.nearClipPlane = 0.1f;
+            probe.farClipPlane = 100000f;
+
+            probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Realtime;
+            probe.timeSlicingMode = UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.NoTimeSlicing;
+            probe.refreshMode = UnityEngine.Rendering.ReflectionProbeRefreshMode.ViaScripting;
+
+            probe.hdr = true;
+            probe.intensity = 1.25f; // Make reflections brighter for punchier ambient and reflections
+
+            probe.enabled = true;
+            probe.RenderProbe();
+        }
+
         private void HandleSMAA()
         {
             var settings = Settings.LoadSettings();
@@ -124,6 +163,11 @@ namespace Deferred
             if (smaaScript != null)
             {
                 Destroy(smaaScript);
+            }
+
+            if (probeGo != null)
+            {
+                probeGo.DestroyGameObject();
             }
         }
     }

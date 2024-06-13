@@ -30,18 +30,15 @@ namespace Deferred
 
         private void HandleCameras()
         {
-            // "Main Camera" is the editor parts camera
-            List<string> targetCameraNames = new List<string>() { "Camera ScaledSpace", "Camera 00", "Camera 01", "Main Camera" };
+            Camera firstLocalCamera, scaledCamera, editorCamera;
 
-            targetCameras = Camera.allCameras.Where(x => targetCameraNames.Contains(x.name)).
-                OrderBy(camera => targetCameraNames.IndexOf(camera.name)).ToList();
+            firstLocalCamera = RenderingUtils.FindCamera(RenderingUtils.IsUnifiedCameraMode() ? "Camera 00" : "Camera 01");
+            scaledCamera = RenderingUtils.FindCamera("Camera ScaledSpace");
+            editorCamera = RenderingUtils.FindCamera("Main Camera");
 
-            foreach (var camera in targetCameras)
-            {
-                EnableDeferredShadingOnCamera(camera);
-            }
-
-            var firstLocalCamera = RenderingUtils.IsUnifiedCameraMode() ? targetCameras.ElementAt(1) : targetCameras.ElementAt(2);
+            EnableDeferredShadingOnCamera(firstLocalCamera);
+            EnableDeferredShadingOnCamera(scaledCamera);
+            EnableDeferredShadingOnCamera(editorCamera);
 
             if (firstLocalCamera != null)
             {
@@ -67,8 +64,6 @@ namespace Deferred
                     firstLocalCamera.gameObject.AddComponent<RefreshLegacyAmbient>();
                 }
             }
-
-            var scaledCamera = targetCameras.ElementAt(0);
 
             if (scaledCamera != null)
             {
@@ -135,7 +130,6 @@ namespace Deferred
             var settings = Settings.LoadSettings();
             Shader.SetGlobalFloat("deferredAmbientBrightness", settings.ambientBrightness);
             Shader.SetGlobalFloat("deferredAmbientTint", settings.ambientTint);
-            Shader.SetGlobalInt("editorLightingMode", HighLogic.LoadedSceneIsEditor ? 1 : 0);
         }
 
         // Replaces stock shaders which don't have deferred passes with replacements that do

@@ -31,7 +31,6 @@ sampler2D _CameraGBufferTexture2;
 
 int useReflectionProbeOnCurrentCamera;
 float deferredAmbientBrightness, deferredAmbientTint;
-int editorLightingMode;
 
 half3 distanceFromAABB(half3 p, half3 aabbMin, half3 aabbMax)
 {
@@ -91,9 +90,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     {
         ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
-        float diffuseMipLevel = editorLightingMode > 0.0 ? 1.0 : 0.55; // The probe in editors has a different mip setup that looks shinier with the default value I use for flight
-
-        ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, diffuseMipLevel);
+        ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 1.0);
         ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance
     }
 
