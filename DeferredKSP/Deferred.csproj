@@ -135,7 +135,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(ProjectDir)bin\Release\Deferred.dll" "C:\Steam\steamapps\common\Kerbal Space Program\GameData\Deferred" /Y
+    <PostBuildEvent>xcopy "$(ProjectDir)bin\Release\Deferred.dll" "C:\Steam\steamapps\common\Kerbal Space Program\GameData\zzz_Deferred" /Y
 
 "C:\Steam\steamapps\common\Kerbal Space Program\dx11.bat"</PostBuildEvent>
   </PropertyGroup>

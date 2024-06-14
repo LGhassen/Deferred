@@ -9,7 +9,7 @@ namespace Deferred
 		[MenuItem ("Assets/Build AssetBundles")]
 		static void BuildAllAssetBundles ()
 		{
-			var outDir = "C:/Steam/steamapps/common/Kerbal Space Program/GameData/Deferred/Shaders";
+			var outDir = "C:/Steam/steamapps/common/Kerbal Space Program/GameData/zzz_Deferred/Shaders";
 
 			if (!Directory.Exists (outDir))
 				Directory.CreateDirectory (outDir);
