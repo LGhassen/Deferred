@@ -31,6 +31,8 @@ namespace Deferred
 
         private void FixScene()
         {
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+
             FixVABProps();
             FixSPHLights();
             FixShadowReceiver();
@@ -102,7 +104,7 @@ namespace Deferred
 
         private void FixReflections()
         {
-            // Disable the default KSP VAB/SPH cuebmaps which don't have the same convolution as reflectionprobes causing materials to appear way glossier
+            // Disable the default KSP VAB/SPH cubemaps which don't have the same convolution as reflectionprobes causing materials to appear way glossier
             RenderSettings.customReflection = null;
             RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
 
