@@ -3,7 +3,6 @@ Shader "KSP/Emissive/Specular"
     Properties 
     {
         _MainTex("Color Map", 2D) = "gray" {}
-        _BumpMap("Normal Map", 2D) = "bump" {}
         _Emissive("Emissive Map", 2D) = "white" {}
         _Shininess ("Shininess", Range (0.0, 1.0)) = 0.5
         _Color ("Part Color", Color) = (1.0, 1.0, 1.0, 1.0)
