@@ -90,7 +90,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     {
         ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
-        ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 1.0);
+        ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
         ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance
     }
 
