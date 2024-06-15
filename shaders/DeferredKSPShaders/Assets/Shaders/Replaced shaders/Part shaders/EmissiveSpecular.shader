@@ -26,7 +26,7 @@ Shader "KSP/Emissive/Specular"
 
         CGPROGRAM
 
-        #define EMISSIVE_ON
+        #define EMISSIVEMAP_ON
         #define SPECULAR_ON
 
         #include "../ReplacementShader.cginc"

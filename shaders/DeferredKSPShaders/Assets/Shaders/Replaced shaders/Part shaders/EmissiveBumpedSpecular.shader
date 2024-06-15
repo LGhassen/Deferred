@@ -28,7 +28,7 @@ Shader "KSP/Emissive/Bumped Specular"
 
 		CGPROGRAM
 
-		#define EMISSIVE_ON
+		#define EMISSIVEMAP_ON
 		#define NORMALMAP_ON
         #define SPECULAR_ON
 
