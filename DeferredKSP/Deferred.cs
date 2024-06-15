@@ -12,7 +12,7 @@ namespace Deferred
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     public class Deferred : MonoBehaviour
     {
-        private List<Camera> targetCameras = new List<Camera>();
+        Camera firstLocalCamera, scaledCamera, editorCamera, internalCamera;
         private bool gbufferDebugModeEnabled = false;
 
         private static bool incompatibleShadersReplacedInExistingMaterials = false;
@@ -30,8 +30,6 @@ namespace Deferred
 
         private void HandleCameras()
         {
-            Camera firstLocalCamera, scaledCamera, editorCamera;
-
             firstLocalCamera = RenderingUtils.FindCamera(RenderingUtils.IsUnifiedCameraMode() ? "Camera 00" : "Camera 01");
             scaledCamera = RenderingUtils.FindCamera("Camera ScaledSpace");
             editorCamera = RenderingUtils.FindCamera("Main Camera");
@@ -164,13 +162,12 @@ namespace Deferred
 
         public void OnCameraChange(CameraManager.CameraMode cameraMode)
         {
-            Camera internalCamera = Camera.allCameras.FirstOrDefault(_cam => _cam.name == "InternalCamera");
+            internalCamera = Camera.allCameras.FirstOrDefault(_cam => _cam.name == "InternalCamera");
 
             if (cameraMode == CameraManager.CameraMode.IVA)
             {
                 if (internalCamera != null)
                 {
-                    targetCameras.Add(internalCamera);
                     EnableDeferredShadingOnCamera(internalCamera);
                     ToggleCameraDebugMode(internalCamera, gbufferDebugModeEnabled);
 
@@ -187,21 +184,18 @@ namespace Deferred
             {
                 if (internalCamera != null)
                 {
-                    targetCameras.Remove(internalCamera);
                     ToggleCameraDebugMode(internalCamera, false);
                 }
-
-                targetCameras.RemoveAll(x => x == null);
             }
         }
 
 
         public void ToggleDebugMode()
         {
-            foreach (var camera in targetCameras)
-            {
-                ToggleCameraDebugMode(camera, !gbufferDebugModeEnabled);
-            }
+            ToggleCameraDebugMode(firstLocalCamera, !gbufferDebugModeEnabled);
+            ToggleCameraDebugMode(scaledCamera, !gbufferDebugModeEnabled);
+            ToggleCameraDebugMode(internalCamera, !gbufferDebugModeEnabled);
+            ToggleCameraDebugMode(editorCamera, !gbufferDebugModeEnabled);
 
             gbufferDebugModeEnabled = !gbufferDebugModeEnabled;
         }
@@ -247,10 +241,10 @@ namespace Deferred
 
             GameEvents.OnCameraChange.Remove(OnCameraChange);
 
-            foreach(var camera in targetCameras)
-            {
-                ToggleCameraDebugMode(camera, false);
-            }
+            ToggleCameraDebugMode(firstLocalCamera, false);
+            ToggleCameraDebugMode(scaledCamera, false);
+            ToggleCameraDebugMode(internalCamera, false);
+            ToggleCameraDebugMode(editorCamera, false);
         }
 
         bool showUI=false;
