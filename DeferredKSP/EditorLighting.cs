@@ -33,6 +33,9 @@ namespace Deferred
         {
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
 
+            // TUFX enables deferred fog when installed, but it applies over everything in the VAB/SPH, this fixes it
+            RenderSettings.fogDensity = 0f;
+
             FixVABProps();
             FixSPHLights();
             FixShadowReceiver();
