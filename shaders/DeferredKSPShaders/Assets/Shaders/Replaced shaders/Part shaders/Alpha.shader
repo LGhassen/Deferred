@@ -7,6 +7,7 @@ Shader "KSP/Alpha/Translucent"
         _Color ("Part Color", Color) = (1.0, 1.0, 1.0, 1.0)
         _SpecColor ("Specular Color", Color) = (0.5, 0.5, 0.5, 1.0)
         _EmissiveColor("Emissive Color", Color) = (0.0, 0.0, 0.0, 1.0)
+        [PerRendererData]_Opacity("_Opacity", Range(0,1)) = 1
         [PerRendererData]_RimFalloff("Rim Falloff", Range(0.0, 10.0) ) = 0.1
         [PerRendererData]_RimColor("Rim Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_TemperatureColor("Temperature Color", Color) = (0.0, 0.0, 0.0, 0.0)
