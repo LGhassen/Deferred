@@ -31,6 +31,7 @@ sampler2D _CameraGBufferTexture2;
 
 int useReflectionProbeOnCurrentCamera;
 float deferredAmbientBrightness, deferredAmbientTint;
+float4x4 internalSpaceToWorld; // Transform from internal space to world if on IVA camera, identity matrix otherwise
 
 half3 distanceFromAABB(half3 p, half3 aabbMin, half3 aabbMax)
 {
@@ -59,23 +60,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     float3 eyeVec = normalize(worldPos - _WorldSpaceCameraPos);
     half oneMinusReflectivity = 1 - SpecularStrength(data.specularColor);
 
-    half3 worldNormalRefl = reflect(eyeVec, data.normalWorld);
-
-    // Unused member don't need to be initialized
-    UnityGIInput d;
-    d.worldPos = worldPos;
-    d.worldViewDir = -eyeVec;
-    d.probeHDR[0] = unity_SpecCube0_HDR;
-    d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
-
-    float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
-    #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-    d.probePosition[0]  = unity_SpecCube0_ProbePosition;
-    d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
-    d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
-    #endif
-
-    Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
+    //half3 worldNormalRefl = reflect(eyeVec, data.normalWorld);
 
     UnityLight light;
     light.color = half3(0, 0, 0);
@@ -85,13 +70,39 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     ind.diffuse = 0;
     ind.specular = 0;
 
+    float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
+
     [branch]
     if (useReflectionProbeOnCurrentCamera > 0)
     {
+        // The reflection probe is only ever rendered in one space, not matching IVA orientation
+        // Rotate normals when in IVA to sample the probe correctly
+        float3 actualWorldNormal = data.normalWorld;
+        float3 reflectionProbeSpaceNormal = mul(internalSpaceToWorld, float4(data.normalWorld, 0.0));
+        data.normalWorld = reflectionProbeSpaceNormal;
+
+        // Unused member don't need to be initialized
+        UnityGIInput d;
+        d.worldPos = mul(internalSpaceToWorld, worldPos);
+        //d.worldViewDir = -eyeVec;
+        d.worldViewDir = mul(internalSpaceToWorld, float4(-eyeVec, 0.0));
+        d.probeHDR[0] = unity_SpecCube0_HDR;
+        d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
+        
+        #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+        d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+        d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+        d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+        #endif
+
+        Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
+
         ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
         ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
         ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance
+
+        data.normalWorld = actualWorldNormal;
     }
 
     float diffuseMagnitude = length(ind.diffuse);
@@ -100,7 +111,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
 
     ind.diffuse = lerp(legacyAmbientColor, ind.diffuse, saturate((diffuseMagnitude - legacyAmbientMagnitude) * 100.0));
 
-    ind.diffuse *= data.occlusion; // Take the occlusion into account for the one IVA where it's used and maybe future AO implementations
+    ind.diffuse *= data.occlusion; // Take the occlusion into account for the one IVA where it's used and for AO
 
     half3 rgb = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind).rgb;
 

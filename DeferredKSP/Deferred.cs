@@ -89,6 +89,7 @@ namespace Deferred
             }
 
             Shader.SetGlobalInt(DisableCameraReflectionProbe.UseReflectionProbeOnCurrentCameraProperty, 1);
+            Shader.SetGlobalMatrix(IVALightingRotation.InternalSpaceToWorld, Matrix4x4.identity);
 
             GameEvents.OnCameraChange.Add(OnCameraChange);
         }
@@ -177,6 +178,13 @@ namespace Deferred
                     {
                         dummyForwardObject = internalCamera.gameObject.AddComponent<ForwardRenderingCompatibility>();
                         dummyForwardObject.Init(20);
+                    }
+
+                    var ivaLightingRotation = internalCamera.GetComponent<IVALightingRotation>();
+
+                    if (ivaLightingRotation == null)
+                    {
+                        internalCamera.gameObject.AddComponent<IVALightingRotation>();
                     }
                 }
             }
@@ -285,7 +293,6 @@ namespace Deferred
                     GBufferDebug.debugMode = (GBufferDebug.DebugMode)(((int)(GBufferDebug.debugMode) + 1) % enumCount);
                 }
             }
-
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Blinn-Phong Shininess conversion power");
