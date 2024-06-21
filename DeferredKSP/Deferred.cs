@@ -26,6 +26,8 @@ namespace Deferred
             HandleCameras();
 
             HandleStockProbe();
+
+            QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
         }
 
         private void HandleCameras()
