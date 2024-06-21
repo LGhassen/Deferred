@@ -2,7 +2,6 @@
 using UnityEngine;
 using System.Linq;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
 using System.Collections;
 using System;
 
@@ -28,6 +27,7 @@ namespace Deferred
             HandleStockProbe();
 
             QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
+            GameSettings.TERRAIN_SHADER_QUALITY = 3; // Only have shader replacements for the Ultra quality terrain shader
         }
 
         private void HandleCameras()
