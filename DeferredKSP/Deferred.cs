@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyVersion("1.1")]
 namespace Deferred
 {
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
