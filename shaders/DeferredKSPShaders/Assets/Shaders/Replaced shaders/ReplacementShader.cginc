@@ -71,8 +71,9 @@ void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecu
 #elif defined(EMISSIVE_LIGHTMAP_ON)
     float4 lightmap = tex2D(_LightMap, i.uv2_LightMap);
     float occlusionPower = pow(lightmap.a, _Occlusion);
-    float3 emissionMap = (lightmap.r * _LightColor1 + lightmap.g * _LightColor2) * color.rgb;
-    o.Occlusion = lightmap.b * occlusionPower;
+    float3 emissionMap = (lightmap.r * _LightColor1 + lightmap.g * _LightColor2) * color.rgb * occlusionPower;
+    //o.Occlusion = lightmap.b * occlusionPower;  // the ambient lightMap is broken on several cockpits and doesn't match the props so ignore it
+    o.Occlusion = occlusionPower;
 #else    
     float3 emissionMap = 0.0.xxx;
 #endif
