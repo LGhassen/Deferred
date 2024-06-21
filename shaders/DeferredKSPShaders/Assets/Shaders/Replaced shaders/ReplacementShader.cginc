@@ -1,6 +1,6 @@
 #include "Emission.cginc"
 #include "../LegacyToStandard.cginc"
-#include "../DitherFunctions.cginc"
+#include "../Dissolve.cginc"
 
 sampler2D _MainTex;
 sampler2D _BumpMap;
@@ -48,8 +48,7 @@ void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecu
     o.Occlusion = 1.0;
     
 #if defined (DITHER_FADE_ON)
-    float2 screenUV = i.screenPos.xy / i.screenPos.w;
-    ditherClip(screenUV, _Opacity);
+    DissolveClip(i.worldPos, _Opacity);
 #endif
     
 #if defined (IGNORE_VERTEX_COLOR_ON)
