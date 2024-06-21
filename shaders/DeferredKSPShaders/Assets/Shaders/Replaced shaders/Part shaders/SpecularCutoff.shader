@@ -1,9 +1,4 @@
-﻿// As far as I can tell this isn't meant to be an actual cutoff shader as it doesn't have an alphatest property
-// It seems to only be used on fairings, which are transparent only in the VAB
-// Sadly we can't have transparency in deferred so use a dithered fade, that's fine though
-// Vertex colors are also all black on the fairings for some reason so ignore those specifically
-// This is then a copy paste of Bumped Specular with dithered fade enabled and with vertex colors disabled
-Shader "KSP/Bumped Specular (Cutoff)"
+﻿Shader "KSP/Specular (Cutoff)"
 {    
 
     Properties 
@@ -34,7 +29,6 @@ Shader "KSP/Bumped Specular (Cutoff)"
 
         CGPROGRAM
 
-        #define NORMALMAP_ON
         #define SPECULAR_ON
         #define IGNORE_VERTEX_COLOR_ON
         #define DITHER_FADE_ON
