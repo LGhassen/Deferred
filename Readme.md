@@ -6,6 +6,11 @@ Deferred rendering decouples geometry rendering from lighting, allowing for more
 
 A lot of the game's shaders are replaced with entirely new ones to make this work.
 Please read the mod compatibility list, current benefits and limitations sections.
+
+# Dependencies
+
+Shabby is needed (bundled on the github release but not on SpaceDock).
+
 # Current benefits
 ## Better ambient lighting
 Ambient is now applied to the scene using the stock reflection probe. This is something that TexturesUnlimited already did but only for parts, this is now applied for everything in the scene including terrain, buildings etc.
@@ -23,7 +28,6 @@ One of the main advantages of deferred rendering is eliminating the prohibitive 
 
 [![Pixel lights performance](https://i.imgur.com/s8pN5Nq.png)](https://www.youtube.com/watch?v=Qn9h8GK7cY4)
 
-Make sure  to set your pixel light setting to the maximum in the game settings to take full advantage of this
 # Known issues
 ## Terrain shader support
 As stock shaders are incompatible with deferred rendering, the terrain shaders are replaced with entirely new ones implemented from scratch to approximate the functionality of the stock ones. For now only the "Ultra" setting terrain shaders are replaced, meaning other settings won't work. That includes the regular, non-atlas ultra shader used on all the bodies (outside of Kerbin) to be clear (PQSTriplanarZoomRotation).
@@ -51,14 +55,13 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Scatterer | Compatible on Windows, OpenGL/Linux/Mac need to use [this fixed version](https://github.com/LGhassen/Scatterer/releases/tag/839) |
 | EVE-Redux | Compatible |
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
-| TUFX | Compatible apart from ambient occlusion
+| TUFX | Compatible
 | Shaddy | Renders in forward
 | Kopernicus | Untested, same limitations to terrain shaders apply as stock (only stock Ultra terrain shaders supported for now)
 | RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
 | Waterfall | Compatible
 | Engine Lighting | Unknown/untested
-| ModuleDepthMask | Incompatible |
 
 # Debug menu
 Using alt+d will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
