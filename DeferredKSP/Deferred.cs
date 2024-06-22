@@ -5,13 +5,13 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System;
 
-[assembly: AssemblyVersion("1.1.1")]
+[assembly: AssemblyVersion("1.1.2")]
 namespace Deferred
 {
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     public class Deferred : MonoBehaviour
     {
-        Camera firstLocalCamera, scaledCamera, editorCamera, internalCamera;
+        Camera nearCamera, firstLocalCamera, scaledCamera, editorCamera, internalCamera;
         private bool gbufferDebugModeEnabled = false;
 
         private static bool incompatibleShadersReplacedInExistingMaterials = false;
@@ -33,10 +33,17 @@ namespace Deferred
         private void HandleCameras()
         {
             firstLocalCamera = RenderingUtils.FindCamera(RenderingUtils.IsUnifiedCameraMode() ? "Camera 00" : "Camera 01");
+            nearCamera = RenderingUtils.FindCamera("Camera 00");
             scaledCamera = RenderingUtils.FindCamera("Camera ScaledSpace");
             editorCamera = RenderingUtils.FindCamera("Main Camera");
 
             EnableDeferredShadingOnCamera(firstLocalCamera);
+
+            if (!RenderingUtils.IsUnifiedCameraMode() && nearCamera != null)
+            {
+                EnableDeferredShadingOnCamera(nearCamera);
+            }
+
             EnableDeferredShadingOnCamera(scaledCamera);
             EnableDeferredShadingOnCamera(editorCamera);
 
