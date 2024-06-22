@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System;
 
-[assembly: AssemblyVersion("1.1.2")]
+[assembly: AssemblyVersion("1.1.3")]
 namespace Deferred
 {
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
