@@ -104,6 +104,10 @@ sampler2D _SpecMap;
 
 void DeferredSpecularMappedReplacementShader(Input i, inout SurfaceOutputStandardSpecular o)
 {
+#if defined (DITHER_FADE_ON)
+    DissolveClip(i.worldPos, _Opacity);
+#endif
+    
     float4 vertexColor = i.color;
     float4 color = _Color * vertexColor * _BurnColor * tex2D(_MainTex, (i.uv_MainTex));
     float3 specularColor = tex2D(_SpecMap, (i.uv_SpecMap)).rgb;

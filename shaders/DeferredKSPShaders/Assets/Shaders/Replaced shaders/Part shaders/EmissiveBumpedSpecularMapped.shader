@@ -14,6 +14,7 @@ Shader "KSP/Emissive/Bumped Specular (Mapped)"
         [PerRendererData]_RimColor("Rim Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_TemperatureColor("Temperature Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_BurnColor ("Burn Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        [PerRendererData]_Opacity("_Opacity", Range(0.0,1.0)) = 1.0
     }
     SubShader 
     {
@@ -30,6 +31,7 @@ Shader "KSP/Emissive/Bumped Specular (Mapped)"
 
         #define NORMALMAP_ON
         #define EMISSIVEMAP_ON
+        #define DITHER_FADE_ON // Shader is used by restock for fairings, enable the fade for editors
 
         #include "../ReplacementShader.cginc"
         #pragma surface DeferredSpecularMappedReplacementShader StandardSpecular

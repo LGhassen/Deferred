@@ -28,7 +28,6 @@ struct Input
 #include "./AtlasUtils.cginc"
 #include "./NonAtlasUtils.cginc"
 #include "./TriplanarUtils.cginc"
-#include "../DitherFunctions.cginc"
 
 void TerrainReplacementVertexShader(inout appdata_full v, out Input o)
 {
