@@ -1,47 +1,10 @@
 # Deferred - Adding deferred rendering to KSP
 
-This mod adds deferred rendering support to KSP.
-
-Deferred rendering decouples geometry rendering from lighting, allowing for more modern lighting techniques to be used in the future, and better lighting performance with many light sources.
-
-A lot of the game's shaders are replaced with entirely new ones to make this work.
-Please read the mod compatibility list, current benefits and limitations sections.
+You'll find an [explanation of what the mod does here](https://www.patreon.com/posts/deferred-106557481).
 
 # Dependencies
 
-Shabby is needed (bundled on the github release but not on SpaceDock).
-
-# Current benefits
-## Better ambient lighting
-Ambient is now applied to the scene using the stock reflection probe. This is something that TexturesUnlimited already did but only for parts, this is now applied for everything in the scene including terrain, buildings etc.
-
-Left: Stock. Right: New lighting
-
-![enter image description here](https://i.imgur.com/QfqYE0I.jpeg)
-![enter image description here](https://i.imgur.com/wP9Q1ki.jpeg)
-![enter image description here](https://i.imgur.com/JMdb0Rb.jpeg)
-![enter image description here](https://i.imgur.com/L6bgRLP.jpeg)
-![enter image description here](https://i.imgur.com/8O28pBM.png)
-
-## Lighting performance
-One of the main advantages of deferred rendering is eliminating the prohibitive cost of using many pixels lights, as seen in the below video (click):
-
-[![Pixel lights performance](https://i.imgur.com/s8pN5Nq.png)](https://www.youtube.com/watch?v=Qn9h8GK7cY4)
-
-# Known issues
-## Terrain shader support
-As stock shaders are incompatible with deferred rendering, the terrain shaders are replaced with entirely new ones implemented from scratch to approximate the functionality of the stock ones. For now only the "Ultra" setting terrain shaders are replaced, meaning other settings won't work. That includes the regular, non-atlas ultra shader used on all the bodies (outside of Kerbin) to be clear (PQSTriplanarZoomRotation).
-As these are new shaders you might notice increased tiling in some areas, and slightly different colors.
-**Examples**
-Mistmach between runway grass and terrain color
-![enter image description here](https://i.imgur.com/G6HgUnT.png)Some visible grass tiling
-![enter image description here](https://i.imgur.com/ajA9uZF.png)
-
-## Altered visual appearance
-Some parts may look shinier or different than stock, although I tried to keep them looking reasonable.
-## Ambient looking flat at noon
-Ambient may look a little flat at noon, as seen here:
-![enter image description here](https://i.imgur.com/tXQZlBv.png)
+Shabby is needed (currently bundled on the github release but will be separate in future releases and CKAN).
 
 # Mod compatibility status
 In no particular order.
@@ -58,9 +21,14 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | TUFX | Compatible
 | Shaddy | Renders in forward
 | Kopernicus | Untested, same limitations to terrain shaders apply as stock (only stock Ultra terrain shaders supported for now)
+| Waterfall | Compatible
+| FreeIVA | Compatible
+| KerbalVR | Compatible
+| SimpleAdjustableFairings  | Compatible but transparency doesn't work in editors
+| KerbalKonstructs | Mix of rendering in forward and visual issues, fix submitted by me to KK maintainers and awaiting approval
+| NeptuneCamera  | Incompatible
 | RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
-| Waterfall | Compatible
 | Engine Lighting | Unknown/untested
 
 # Debug menu
@@ -129,3 +97,4 @@ To check for terrain and only terrain
                 Ref 1
                 Pass Keep
             }
+
