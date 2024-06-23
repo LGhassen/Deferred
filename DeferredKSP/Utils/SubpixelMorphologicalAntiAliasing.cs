@@ -23,7 +23,7 @@ namespace Deferred
 
         public Quality QualityUsed { get => quality; }
 
-        public SubpixelMorphologicalAntialiasing()
+        public void Awake()
         {
             targetCamera = GetComponent<Camera>();
 
