@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System;
 
-[assembly: AssemblyVersion("1.1.3")]
+[assembly: AssemblyVersion("1.1.4")]
 namespace Deferred
 {
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
@@ -28,6 +28,8 @@ namespace Deferred
 
             QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
             GameSettings.TERRAIN_SHADER_QUALITY = 3; // Only have shader replacements for the Ultra quality terrain shader
+            GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);
+            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 128);
         }
 
         private void HandleCameras()
