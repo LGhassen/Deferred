@@ -12,6 +12,7 @@ Shader "KSP/Bumped Specular"
         [PerRendererData]_RimColor("Rim Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_TemperatureColor("Temperature Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_BurnColor ("Burn Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        [PerRendererData]_Opacity("_Opacity", Range(0.0,1.0)) = 1.0
 	}
 
 	SubShader 
@@ -29,6 +30,8 @@ Shader "KSP/Bumped Specular"
 
         #define NORMALMAP_ON
         #define SPECULAR_ON
+        //#define DITHER_FADE_ON // Shader is used by Simple Adjustable Fairings for fairings, enable the fade for editors
+                                 // Doesn't work well, transparency seems to be locked at 50% always
 
         #include "../ReplacementShader.cginc"
         #pragma surface DeferredSpecularReplacementShader StandardSpecular
