@@ -6,6 +6,18 @@ You'll find an [explanation of what the mod does here](https://www.patreon.com/p
 
 Shabby is needed (currently bundled on the github release but will be separate in future releases and CKAN).
 
+# Limitations/known issues
+
+Only "Ultra" quality terrain shaders are compatible, that includes both atlas and non-atlas terrain shaders. Terrain quality is forced to Ultra when the mod loads.
+
+Names of compatible terrain shaders:
+
+ - PQSTriplanarZoomRotation.shader
+ - PQSTriplanarZoomRotationTextureArray - 1Blend.shader
+ - PQSTriplanarZoomRotationTextureArray - 2Blend.shader
+ - PQSTriplanarZoomRotationTextureArray - 3Blend.shader
+ - PQSTriplanarZoomRotationTextureArray - 4Blend.shader
+
 # Mod compatibility status
 In no particular order.
 Mods that say "renders in forward" means they may appear to render correctly but get no deferred benefits for now (no lighting perf improvements, not compatible with any deferred ambient/lighting/effects)
@@ -25,7 +37,9 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | FreeIVA | Compatible
 | KerbalVR | Compatible
 | SimpleAdjustableFairings  | Compatible but transparency doesn't work in editors
-| KerbalKonstructs | Mix of rendering in forward and visual issues, fix submitted by me to KK maintainers and awaiting approval
+| KerbalKonstructs | Compatible
+| B9 Procedural Wings | Renders in forward
+| KSRSS  | Incompatible, black terrain
 | NeptuneCamera  | Incompatible
 | RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
@@ -97,4 +111,5 @@ To check for terrain and only terrain
                 Ref 1
                 Pass Keep
             }
+
 
