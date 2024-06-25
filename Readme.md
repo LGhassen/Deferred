@@ -7,7 +7,7 @@ You'll find an [explanation of what the mod does here](https://www.patreon.com/p
 Shabby is needed (currently bundled on the github release but will be separate in future releases and CKAN).
 
 # Limitations/known issues
-
+## Terrain shaders
 Only "Ultra" quality terrain shaders are compatible, that includes both atlas and non-atlas terrain shaders. Terrain quality is forced to Ultra when the mod loads.
 
 Names of compatible terrain shaders:
@@ -18,6 +18,11 @@ Names of compatible terrain shaders:
  - PQSTriplanarZoomRotationTextureArray - 3Blend.shader
  - PQSTriplanarZoomRotationTextureArray - 4Blend.shader
 
+## Transparency
+Traditional transparency doesn't work in deferred rendering for opaque objects (only used in the editors in KSP). To emulate transparency, a stylized dissolve effect is used on fairing-only shaders, and a dithering effect is applied on regular shaders.
+
+![enter image description here](https://i.imgur.com/RIjNtSZ.png)
+
 # Mod compatibility status
 In no particular order.
 Mods that say "renders in forward" means they may appear to render correctly but get no deferred benefits for now (no lighting perf improvements, not compatible with any deferred ambient/lighting/effects)
@@ -25,7 +30,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Mod  | Status | Notes |
 | ------------- | ------------- |------------- |
 | Textures Unlimited  |	Compatible [via fork](https://github.com/LGhassen/TexturesUnlimited/releases), otherwise renders in forward |	|
-| Parallax  | Incompatible for now, tesselation has rendering issues, scatters and distant terrain render in forward |
+| Parallax  | Incompatible, mix of artifacts and rendering in forward, will be compatible soon |
 | Conformal decals  | Renders in forward, will be fully compatible soon |
 | Scatterer | Compatible |
 | EVE-Redux | Compatible |
@@ -36,14 +41,15 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Waterfall | Compatible
 | FreeIVA | Compatible
 | KerbalVR | Compatible
-| SimpleAdjustableFairings  | Compatible but transparency doesn't work in editors
+| PlanetShine | Compatible but obsolete at default settings. Use if you want more control over lighting, have custom settings and know what you are doing
+| SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
+| RasterPropMonitor | Compatible
+| Engine Lighting | Compatible
 | B9 Procedural Wings | Renders in forward
 | KSRSS  | Incompatible, black terrain
 | NeptuneCamera  | Incompatible
-| RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
-| Engine Lighting | Unknown/untested
 
 # Debug menu
 Using alt + d ( right shift + d on linux) will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
@@ -111,5 +117,6 @@ To check for terrain and only terrain
                 Ref 1
                 Pass Keep
             }
+
 
 
