@@ -31,7 +31,7 @@ Shader "KSP/Emissive/Bumped Specular (Mapped)"
 
         #define NORMALMAP_ON
         #define EMISSIVEMAP_ON
-        #define DITHER_FADE_ON // Shader is used by restock for fairings, enable the fade for editors
+        #define DITHER_FADE_ON
 
         #include "../ReplacementShader.cginc"
         #pragma surface DeferredSpecularMappedReplacementShader StandardSpecular

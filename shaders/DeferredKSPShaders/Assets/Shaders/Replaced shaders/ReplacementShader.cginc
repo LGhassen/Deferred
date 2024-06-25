@@ -1,6 +1,7 @@
 #include "Emission.cginc"
 #include "../LegacyToStandard.cginc"
 #include "../Dissolve.cginc"
+#include "../DitherFunctions.cginc"
 
 sampler2D _MainTex;
 sampler2D _BumpMap;
@@ -43,11 +44,16 @@ struct Input
     float4 screenPos;
 };
 
+
+
 void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecular o)
 {
     o.Occlusion = 1.0;
     
 #if defined (DITHER_FADE_ON)
+    float2 screenUV = i.screenPos.xy / i.screenPos.w;
+    ditherClipTexture(screenUV, _Opacity);
+#elif defined (DISSOLVE_FADE_ON)
     DissolveClip(i.worldPos, _Opacity);
 #endif
     
@@ -99,12 +105,14 @@ void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecu
 #endif
 }
 
-
 sampler2D _SpecMap;
 
 void DeferredSpecularMappedReplacementShader(Input i, inout SurfaceOutputStandardSpecular o)
 {
 #if defined (DITHER_FADE_ON)
+    float2 screenUV = i.screenPos.xy / i.screenPos.w;
+    ditherClipTexture(screenUV, _Opacity);
+#elif defined (DISSOLVE_FADE_ON)
     DissolveClip(i.worldPos, _Opacity);
 #endif
     

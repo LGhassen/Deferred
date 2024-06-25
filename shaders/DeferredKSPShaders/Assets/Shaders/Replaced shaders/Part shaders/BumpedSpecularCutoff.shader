@@ -37,7 +37,7 @@ Shader "KSP/Bumped Specular (Cutoff)"
         #define NORMALMAP_ON
         #define SPECULAR_ON
         #define IGNORE_VERTEX_COLOR_ON
-        #define DITHER_FADE_ON
+        #define DISSOLVE_FADE_ON
 
         #include "../ReplacementShader.cginc" //exclude_path:forward
 		#pragma surface DeferredSpecularReplacementShader StandardSpecular 

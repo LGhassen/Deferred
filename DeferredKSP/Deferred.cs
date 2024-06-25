@@ -32,6 +32,8 @@ namespace Deferred
             GameSettings.TERRAIN_SHADER_QUALITY = 3; // I only have shader replacements for the Ultra quality terrain shader
             GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);
             GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 128);
+
+            Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.Instance.LoadedTextures["DeferredDitherBlueNoise"]);
         }
 
         private void HandleCameras()

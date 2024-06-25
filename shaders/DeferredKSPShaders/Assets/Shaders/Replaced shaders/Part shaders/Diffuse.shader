@@ -11,6 +11,7 @@ Shader "KSP/Diffuse"
         [PerRendererData]_RimColor("Rim Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_TemperatureColor("Temperature Color", Color) = (0.0, 0.0, 0.0, 0.0)
         [PerRendererData]_BurnColor ("Burn Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        [PerRendererData]_Opacity("_Opacity", Range(0.0,1.0)) = 1.0
     }
     SubShader 
     {
@@ -24,6 +25,9 @@ Shader "KSP/Diffuse"
         }
 
         CGPROGRAM
+
+        #define DITHER_FADE_ON
+
         #include "../ReplacementShader.cginc"
 		#pragma surface DeferredSpecularReplacementShader StandardSpecular
         #pragma target 3.0

@@ -30,8 +30,7 @@ Shader "KSP/Bumped Specular"
 
         #define NORMALMAP_ON
         #define SPECULAR_ON
-        //#define DITHER_FADE_ON // Shader is used by Simple Adjustable Fairings for fairings, enable the fade for editors
-                                 // Doesn't work well, transparency seems to be locked at 50% always
+        #define DITHER_FADE_ON
 
         #include "../ReplacementShader.cginc"
         #pragma surface DeferredSpecularReplacementShader StandardSpecular
