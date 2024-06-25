@@ -36,14 +36,15 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Waterfall | Compatible
 | FreeIVA | Compatible
 | KerbalVR | Compatible
-| SimpleAdjustableFairings  | Compatible but transparency doesn't work in editors
+| PlanetShine | Compatible but obsolete at default settings. Use if you want more control over lighting, have custom settings and know what you are doing
+| SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
+| RasterPropMonitor | Compatible
+| Engine Lighting | Compatible
 | B9 Procedural Wings | Renders in forward
 | KSRSS  | Incompatible, black terrain
 | NeptuneCamera  | Incompatible
-| RasterPropMonitor | Unknown/untested
 | Camera mods | Unknown/untested
-| Engine Lighting | Unknown/untested
 
 # Debug menu
 Using alt + d ( right shift + d on linux) will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
