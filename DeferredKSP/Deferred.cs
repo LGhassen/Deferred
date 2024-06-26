@@ -309,25 +309,12 @@ namespace Deferred
                 }
             }
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Blinn-Phong Shininess conversion power");
-            blinnPhongShininessPower = (float)(float.Parse(GUILayout.TextField(blinnPhongShininessPower.ToString("0.000"))));
-            GUILayout.EndHorizontal();
-
             if (GUILayout.Button("Close"))
             {
                 showUI = false;
             }
 
             GUI.DragWindow();
-        }
-
-        // TODO: remove this debug setting
-        static float blinnPhongShininessPower = 0.215f;
-
-        void Update()
-        {
-            Shader.SetGlobalFloat("blinnPhongShininessPower", blinnPhongShininessPower);
         }
     }
 }

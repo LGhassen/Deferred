@@ -1,5 +1,4 @@
-//TODO: remove this debug settings
-float blinnPhongShininessPower;
+#define blinnPhongShininessPower 0.215
 
 // An exact conversion from blinn-phong to PBR is impossible, but the look can be approximated perceptually
 // and by observing how blinn-phong looks and feels at various settings, although it can never be perfect
