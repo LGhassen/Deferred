@@ -58,11 +58,14 @@ float4 _DeferredDitherBlueNoise_TexelSize;
 // pos is the fragment position in screen space from [0,1]
 float isDitheredTexture(float2 pos, float alpha)
 {
-    pos *= _ScreenParams.xy;
+    uint2 screenCoords = pos * _ScreenParams.xy;
     
-    pos.xy *= _DeferredDitherBlueNoise_TexelSize.xy;
+    uint2 blueNoiseCoords = uint2(screenCoords.x % uint(_DeferredDitherBlueNoise_TexelSize.z),
+                                 screenCoords.y % uint(_DeferredDitherBlueNoise_TexelSize.w));
+    
+    float2 blueNoiseUV = ((float2) blueNoiseCoords + 0.5.xx) / _DeferredDitherBlueNoise_TexelSize.zw;
 
-    float texValue = tex2Dlod(_DeferredDitherBlueNoise, float4(pos.xy, 0.0, 0.0)).r;
+    float texValue = tex2Dlod(_DeferredDitherBlueNoise, float4(blueNoiseUV, 0.0, 0.0)).r;
     
     // ensure that we clip if the alpha is zero by
     // subtracting a small value when alpha == 0, because
@@ -71,14 +74,23 @@ float isDitheredTexture(float2 pos, float alpha)
 }
 
 // Helpers that call the above functions and clip if necessary
-void ditherClip(float2 pos, float alpha) {
+void ditherClip(float2 pos, float alpha)
+{
+    [branch]
+    if (alpha > 0.99)
+        return;
+    
     clip(isDithered(pos, alpha));
 }
 
 void ditherClipTexture(float2 pos, float alpha)
-{
+{   
     // Tighten transition to hide ugly dithering patterns as long as possible
     alpha = saturate((alpha - 0.2) / 0.6);
+    
+    [branch]
+    if (alpha > 0.99)
+        return;
     
     clip(isDitheredTexture(pos, alpha));
 }
