@@ -37,11 +37,11 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
 | TUFX | Compatible
 | Shaddy | Renders in forward
-| Kopernicus | Untested, same limitations to terrain shaders apply as stock (only stock Ultra terrain shaders supported for now)
+| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld
 | Waterfall | Compatible
 | FreeIVA | Compatible
 | KerbalVR | Compatible
-| PlanetShine | Compatible but obsolete at default settings. Use if you want more control over lighting, have custom settings and know what you are doing
+| PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
 | SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
 | RasterPropMonitor | Compatible
