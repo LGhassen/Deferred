@@ -215,6 +215,11 @@ namespace Deferred
 
         public void ToggleDebugMode()
         {
+            if (!RenderingUtils.IsUnifiedCameraMode() && nearCamera != null)
+            {
+                ToggleCameraDebugMode(nearCamera, !gbufferDebugModeEnabled);
+            }
+
             ToggleCameraDebugMode(firstLocalCamera, !gbufferDebugModeEnabled);
             ToggleCameraDebugMode(scaledCamera, !gbufferDebugModeEnabled);
             ToggleCameraDebugMode(internalCamera, !gbufferDebugModeEnabled);
