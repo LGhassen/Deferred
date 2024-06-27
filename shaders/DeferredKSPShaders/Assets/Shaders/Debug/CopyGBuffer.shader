@@ -17,7 +17,7 @@
 
             #include "UnityCG.cginc"
 
-            sampler2D _CameraGBufferTexture0, _CameraGBufferTexture1, _CameraGBufferTexture2, _CameraGBufferTexture3, _CameraDepthTexture;
+            sampler2D _CameraGBufferTexture0, _CameraGBufferTexture1, _CameraGBufferTexture2, _CameraGBufferTexture3, _CameraDepthTexture, emissionCopyRT;
             int GbufferDebugMode;
 
             int logarithmicLightBuffer;
@@ -60,7 +60,7 @@
                 }
 
                 [branch]
-                if (GbufferDebugMode == 0 || GbufferDebugMode == 5)
+                if (GbufferDebugMode == 0 || GbufferDebugMode == 6)
                 {
                     half4 gbuffer0 = tex2Dlod (_CameraGBufferTexture0, float4(uv, 0.0, 0.0)); // Diffuse RGB, Occlusion A
                     
@@ -78,16 +78,25 @@
                 {
                     return float4 (tex2Dlod(_CameraGBufferTexture2, float4(uv, 0.0, 0.0)).rgb, 1.0); // Normals
                 }
-                else
+                else if (GbufferDebugMode == 4)
                 {
-                    float3 emission = tex2Dlod(_CameraGBufferTexture3, float4(uv, 0.0, 0.0)).rgb;
+                    float3 emission = tex2Dlod(emissionCopyRT, float4(uv, 0.0, 0.0)).rgb;
                     
                     emission = logarithmicLightBuffer > 0 ? -log2(emission) : emission;
                     return float4(emission, 1.0);
                 }
+                else
+                {
+                    float3 emissionAndAmbient = tex2Dlod(_CameraGBufferTexture3, float4(uv, 0.0, 0.0)).rgb;
+                    float3 emission = tex2Dlod(emissionCopyRT, float4(uv, 0.0, 0.0)).rgb;
+                    
+                    emissionAndAmbient = logarithmicLightBuffer > 0 ? -log2(emissionAndAmbient) : emissionAndAmbient;
+                    emission = logarithmicLightBuffer > 0 ? -log2(emission) : emission;
 
-                // TODO: incompatible shaders
+                    float3 ambient = max(emissionAndAmbient - emission, 0.0.xxx);
 
+                    return float4(ambient, 1.0);
+                }
             }
             ENDCG
         }

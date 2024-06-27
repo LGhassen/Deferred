@@ -5,11 +5,13 @@ namespace Deferred
 { 
     public class GBufferDebug : MonoBehaviour
     {
+        CommandBuffer emissionCopyCommandBuffer = null;
         CommandBuffer gbufferCopyCommandBuffer = null;
         CommandBuffer gbufferDisplayCommandBuffer = null;
 
         Camera targetCamera;
         RenderTexture gbufferCopyRT = null;
+        RenderTexture emissionCopyRT = null;
 
         Material copyGBufferMaterial, displayGBufferMaterial;
 
@@ -21,14 +23,16 @@ namespace Deferred
             SpecularColor,
             Normals,
             Smoothness,
-            EmissionAndAmbient,
-            Occlusion
+            Emission,
+            Ambient,
+            Occlusion,
         }
 
         private void Awake()
         {
             targetCamera = GetComponent<Camera>();
 
+            emissionCopyCommandBuffer = new CommandBuffer();
             gbufferCopyCommandBuffer = new CommandBuffer();
             gbufferDisplayCommandBuffer = new CommandBuffer();
 
@@ -43,7 +47,14 @@ namespace Deferred
                 int width, height;
                 RenderingUtils.GetCameraRenderDimensions(targetCamera, out width, out height);
 
+                RenderingUtils.EnsureRenderTexture(ref emissionCopyRT, width, height, targetCamera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32);
                 RenderingUtils.EnsureRenderTexture(ref gbufferCopyRT, width, height, targetCamera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32);
+
+                emissionCopyCommandBuffer.Clear();
+                emissionCopyCommandBuffer.Blit(targetCamera.allowHDR ? BuiltinRenderTextureType.CameraTarget : BuiltinRenderTextureType.GBuffer3, emissionCopyRT);
+                emissionCopyCommandBuffer.SetGlobalTexture("emissionCopyRT", emissionCopyRT);
+
+                targetCamera.AddCommandBuffer(CameraEvent.BeforeReflections, emissionCopyCommandBuffer);
 
                 gbufferCopyCommandBuffer.Clear();
                 copyGBufferMaterial.SetInt("GbufferDebugMode", (int)debugMode);
@@ -52,7 +63,6 @@ namespace Deferred
                 gbufferCopyCommandBuffer.Blit(null, gbufferCopyRT, copyGBufferMaterial);
 
                 targetCamera.AddCommandBuffer(CameraEvent.BeforeLighting, gbufferCopyCommandBuffer);
-
 
                 gbufferDisplayCommandBuffer.Clear();
                 gbufferDisplayCommandBuffer.Blit(gbufferCopyRT, new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), displayGBufferMaterial);
@@ -63,6 +73,11 @@ namespace Deferred
 
         void OnPostRender()
         {
+            if (emissionCopyCommandBuffer != null)
+            {
+                targetCamera.RemoveCommandBuffer(CameraEvent.BeforeReflections, emissionCopyCommandBuffer);
+            }
+
             if (gbufferCopyCommandBuffer != null)
             {
                 targetCamera.RemoveCommandBuffer(CameraEvent.BeforeLighting, gbufferCopyCommandBuffer);
