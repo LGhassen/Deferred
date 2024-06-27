@@ -46,7 +46,8 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | KerbalKonstructs | Compatible
 | RasterPropMonitor | Compatible
 | Engine Lighting | Compatible
-| B9 Procedural Wings | Renders in forward
+| B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases/tag/Deferred) (awaiting merge), otherwise renders in forward
+| Kronal Vessel Viewer | Reported incompatible
 | KSRSS  | Incompatible, black terrain
 | NeptuneCamera  | Incompatible
 | Camera mods | Unknown/untested
