@@ -5,6 +5,7 @@ namespace Deferred
         [Persistent] public float ambientBrightness = 0.9f;
         [Persistent] public float ambientTint = 0.7f;
         [Persistent] public bool useSmaaInEditors = true;
+        [Persistent] public bool useDitheredTransparency = false;
 
         public static Settings LoadSettings()
         {

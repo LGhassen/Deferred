@@ -51,6 +51,7 @@ float isDithered(float2 pos, float alpha) {
 
 
 sampler2D _DeferredDitherBlueNoise;
+int _DeferredUseDitheredTransparency;
 float4 _DeferredDitherBlueNoise_TexelSize;
 
 // Returns whether the pixel should be discarded based
@@ -77,7 +78,7 @@ float isDitheredTexture(float2 pos, float alpha)
 void ditherClip(float2 pos, float alpha)
 {
     [branch]
-    if (alpha > 0.99)
+    if (alpha > 0.99 || _DeferredUseDitheredTransparency < 1)
         return;
     
     clip(isDithered(pos, alpha));
@@ -89,7 +90,7 @@ void ditherClipTexture(float2 pos, float alpha)
     alpha = saturate((alpha - 0.2) / 0.6);
     
     [branch]
-    if (alpha > 0.99)
+    if (alpha > 0.99 || _DeferredUseDitheredTransparency < 1)
         return;
     
     clip(isDitheredTexture(pos, alpha));

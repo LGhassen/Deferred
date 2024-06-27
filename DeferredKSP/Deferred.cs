@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System;
 
-[assembly: AssemblyVersion("1.1.7")]
+[assembly: AssemblyVersion("1.1.8")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
@@ -20,9 +20,11 @@ namespace Deferred
 
         private void Init()
         {
+            var settings = Settings.LoadSettings();
+
             ReplaceIncompatibleShadersInExistingMaterials();
 
-            SetupCustomReflectionsAndAmbient();
+            SetupCustomReflectionsAndAmbient(settings);
 
             HandleCameras();
 
@@ -33,7 +35,16 @@ namespace Deferred
             GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);
             GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 128);
 
-            Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.Instance.LoadedTextures["DeferredDitherBlueNoise"]);
+            if (settings.useDitheredTransparency)
+            { 
+                Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.Instance.LoadedTextures["DeferredDitherBlueNoise"]);
+                Shader.SetGlobalInt("_DeferredUseDitheredTransparency", 1);
+            }
+            else
+            {
+                Shader.SetGlobalTexture("_DeferredDitherBlueNoise", Texture2D.whiteTexture);
+                Shader.SetGlobalInt("_DeferredUseDitheredTransparency", 0);
+            }
         }
 
         private void HandleCameras()
@@ -135,13 +146,12 @@ namespace Deferred
             }
         }
 
-        private static void SetupCustomReflectionsAndAmbient()
+        private static void SetupCustomReflectionsAndAmbient(Settings settings)
         {
             GraphicsSettings.SetShaderMode(BuiltinShaderType.DeferredReflections, BuiltinShaderMode.UseCustom);
             GraphicsSettings.SetCustomShader(BuiltinShaderType.DeferredReflections,
                 ShaderLoader.Instance.DeferredShaders["Deferred/Internal-DeferredReflections"]);
 
-            var settings = Settings.LoadSettings();
             Shader.SetGlobalFloat("deferredAmbientBrightness", settings.ambientBrightness);
             Shader.SetGlobalFloat("deferredAmbientTint", settings.ambientTint);
         }

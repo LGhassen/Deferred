@@ -19,7 +19,9 @@ Names of compatible terrain shaders:
  - PQSTriplanarZoomRotationTextureArray - 4Blend.shader
 
 ## Transparency
-Traditional transparency doesn't work in deferred rendering for opaque objects (only used in the editors in KSP). To emulate transparency, a stylized dissolve effect is used on fairing-only shaders, and a dithering effect is applied on regular shaders.
+Traditional transparency doesn't work in deferred rendering for opaque objects (only used in the editors in KSP). To emulate transparency, a stylized dissolve effect (left on the below image) is used on fairing-only shaders.
+
+A dithering effect (right on the below image) can be applied on regular shaders but is disabled by default because it is distracting (you'll find an option in the settings file).
 
 ![enter image description here](https://i.imgur.com/RIjNtSZ.png)
 
@@ -118,6 +120,7 @@ To check for terrain and only terrain
                 Ref 1
                 Pass Keep
             }
+
 
 
 
