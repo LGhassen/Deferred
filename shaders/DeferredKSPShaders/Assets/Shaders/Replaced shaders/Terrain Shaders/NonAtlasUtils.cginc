@@ -29,7 +29,6 @@ float3 GetNonAtlasTextureWeights(float relativeAltitude)
     textureWeights.y = 1.0 - textureWeights.x - textureWeights.z;
     
     return textureWeights;
-
 }
 
 float4 SampleTriplanarDiffuse(sampler2D tex, float3 triplanarWeights, float3 uv)

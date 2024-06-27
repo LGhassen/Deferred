@@ -51,13 +51,13 @@
 
         CGPROGRAM
 
-        #pragma multi_compile STEEP_TEXTURING_OFF STEEP_TEXTURING_ON
+        #pragma multi_compile STEEP_TEXTURING_ON STEEP_TEXTURING_OFF
         
         #define ATLAS_TEXTUREARRAY_OFF
         #define ATLAS_TEXTURE_COUNT 0
 
-        #pragma multi_compile LOW_TEXTURING_OFF LOW_TEXTURING_ON
-        #pragma multi_compile HIGH_TEXTURING_OFF HIGH_TEXTURING_ON
+        #pragma multi_compile LOW_TEXTURING_ON LOW_TEXTURING_OFF
+        #pragma multi_compile HIGH_TEXTURING_ON HIGH_TEXTURING_OFF
 
         #include "./TerrainReplacementShader.cginc"
         #pragma surface DeferredTerrainReplacementShader Standard vertex:TerrainReplacementVertexShader

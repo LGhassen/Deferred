@@ -33,7 +33,7 @@
 
         CGPROGRAM
 
-        #pragma multi_compile STEEP_TEXTURING_OFF STEEP_TEXTURING_ON
+        #pragma multi_compile STEEP_TEXTURING_ON STEEP_TEXTURING_OFF
         #define ATLAS_TEXTUREARRAY_ON
         #define ATLAS_TEXTURE_COUNT 4
 
