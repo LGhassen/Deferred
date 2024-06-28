@@ -31,9 +31,11 @@ namespace Deferred
             HandleStockProbe();
 
             QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
-            GameSettings.TERRAIN_SHADER_QUALITY = 3; // I only have shader replacements for the Ultra quality terrain shader
+            GameSettings.TERRAIN_SHADER_QUALITY = 3; // I only have shader replacements for the Ultra quality terrain shaders
+
             GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);
-            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 128);
+            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 0);
+            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Min(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 4);
 
             if (settings.useDitheredTransparency)
             { 
