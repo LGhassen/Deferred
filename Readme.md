@@ -128,11 +128,11 @@ Check only for value 3
                 Pass Keep
             }
 ### Checking for Parallax grass only
-Check only for value 4
+Check only for value 32
 
             Stencil
             {
-                Ref 4
+                Ref 32
                 Comp Equal
                 ReadMask 35
                 Pass Keep
@@ -149,7 +149,7 @@ Check for values less or equal to 3 greater than 1
                 Pass Keep
             }
 ### Checking for PQS or scenery or grass
-Check for values less or equal to 7 greater than 1
+Check for values less or equal to 35 greater than 1
 
             Stencil
             {
@@ -159,7 +159,7 @@ Check for values less or equal to 7 greater than 1
                 Pass Keep
             }
 ### Checking for grass or scenery but not PQS
-Check for values less or equal to 7 greater than 2
+Check for values less or equal to 35 greater than 2
 
             Stencil
             {
