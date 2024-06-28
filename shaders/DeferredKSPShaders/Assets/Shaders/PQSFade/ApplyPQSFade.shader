@@ -10,9 +10,9 @@
             // Only affect fragments with the PQS stencil
             Stencil
             {
-                Ref 1
-                ReadMask 1
+                Ref 2
                 Comp Equal
+                ReadMask 35
                 Pass Keep
             }
 

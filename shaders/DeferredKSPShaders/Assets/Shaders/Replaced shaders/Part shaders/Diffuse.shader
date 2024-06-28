@@ -19,7 +19,7 @@ Shader "KSP/Diffuse"
 
         Stencil
         {
-            Ref 8
+            Ref 1
             Comp Always
             Pass Replace
         }

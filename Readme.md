@@ -62,15 +62,17 @@ Transparencies and incompatible forward shaders will render on top of the debug 
 ![enter image description here](https://i.imgur.com/ZgSDZnu.jpeg)
 
 # Stencil buffer usage
-Only 4 bits of the stencil buffer appear to be available in deferred rendering because reasons.
+Only 3 bits of the stencil buffer appear to be available in deferred rendering because the rest are used internally by Unity.
+This is undocumented for version 2019.4 of Unity but the available bits appear to be bits 0, 1, and 5, which correspond to values 1, 2, and 32. Because this is undocumented this usage could turn out to be wrong and bugs may be discovered in the future. Later versions of the documentation say that only bit 5 is actually available, this may not be true for 2019.4 and seems to work in KSP.
+
 Stencil buffer is useful for applying post effects selectively to certain surfaces, we can take advantage of it here since we are using new shaders and can implement stencil everywhere. I propose the following stencil values be used for masking, they are already used by this mod for replaced shaders:
 
-| Surface/Shader type | Stencil bit| Stencil value | Notes |
-| ------------- | ------------- |------------- |------------- |
-| Terrain (stock/parallax)  | 0	| 1 | Already used in this mod to emulate the alpha PQS to scaled fade, since it is impossible to do alpha blending otherwise in deferred (dithering looked really bad here and caused other issues with visual mods)|
-| Parallax grass | 1 |	2 | Parallax grass has normals that point upwards, matching the terrain and not the grass itself so it might be worthwhile to have a separate stencil value for it, for any image effects that might need accurate normals|
-| Local scenery (buildings + stock/parallax scatters)  | 2|	4 | |
-| Parts  | 3|	8 | |
+| Surface/Shader type | Stencil value | Notes |
+| ------------- | ------------- |------------- |
+| Parts  | 1|	|
+| Terrain (stock/parallax)  | 2 | Already used in this mod to emulate the PQS's alpha fade to scaled, since it is impossible to do alpha blending otherwise in deferred (dithering looked really bad here and caused other issues with visual mods)|
+| Local scenery (buildings + stock/parallax scatters)  | 3|
+| Parallax grass | 32  | Parallax grass has normals that point upwards, matching the terrain and not the grass itself so it might be worthwhile to have a separate stencil value for it, for any image effects that might need accurate normals|
 ## Writing stencil values
 
 To write stencil values from a shader, add a stencil block with the stencil value to write, e.g for parts:
@@ -79,7 +81,7 @@ To write stencil values from a shader, add a stencil block with the stencil valu
 
         Stencil
         {
-            Ref 8
+            Ref 1
             Comp Always
             Pass Replace
         }  
@@ -89,38 +91,80 @@ To write stencil values from a shader, add a stencil block with the stencil valu
 
 ## Testing stencil values
 
-For testing/checking stencil values in a post effect, combine the stencil bits you want to test for, use that as ReadMask and verify that the result is superior to zero, using Comp and Ref as seen in https://docs.unity3d.com/Manual/SL-Stencil.html
-Examples:
-To check for Parts:
+For testing/checking stencil values in a post effect, multiple approaches can be used as seen in https://docs.unity3d.com/Manual/SL-Stencil.html
+
+Here are examples to check for the surfaces above or combinations of them
+
+
+### Checking for parts only
+Check only for value 1
 
             Stencil
             {
-                ReadMask 8
-                Comp Greater
-                Ref 0
-                Pass Keep
-            }
-
-To check for Scenery and terrain, combine bits 2 and 0:
-
-            Stencil
-            {
-                ReadMask 5
-                Comp Greater
-                Ref 0
-                Pass Keep
-            }
-
-To check for terrain and only terrain
-
-            Stencil
-            {
-                ReadMask 1
-                Comp Equal
                 Ref 1
+                Comp Equal
+                ReadMask 35
                 Pass Keep
             }
 
+### Checking for PQS only
+Check only for value 2
 
+            Stencil
+            {
+                Ref 2
+                Comp Equal
+                ReadMask 35
+                Pass Keep
+            }
+### Checking for Scenery only
+Check only for value 3
 
+            Stencil
+            {
+                Ref 3
+                Comp Equal
+                ReadMask 35
+                Pass Keep
+            }
+### Checking for Parallax grass only
+Check only for value 4
 
+            Stencil
+            {
+                Ref 4
+                Comp Equal
+                ReadMask 35
+                Pass Keep
+            }
+
+### Checking for PQS or scenery but not grass
+Check for values less or equal to 3 greater than 1
+
+            Stencil
+            {
+                Ref 1
+                Comp Less
+                ReadMask 3
+                Pass Keep
+            }
+### Checking for PQS or scenery or grass
+Check for values less or equal to 7 greater than 1
+
+            Stencil
+            {
+                Ref 1
+                Comp Less
+                ReadMask 35
+                Pass Keep
+            }
+### Checking for grass or scenery but not PQS
+Check for values less or equal to 7 greater than 2
+
+            Stencil
+            {
+                Ref 2
+                Comp Less
+                ReadMask 35
+                Pass Keep
+            }
