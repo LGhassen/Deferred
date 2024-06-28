@@ -18,6 +18,7 @@
         _albedoBrightness("Albedo Brightness", Float) = 2.0
 
         _PlanetOpacity("Opacity of transition to scaled", Float) = 1.0
+        _specularColor("Specular Color", Color) = (0.2, 0.2, 0.2, 0.2)
     }
 
     SubShader

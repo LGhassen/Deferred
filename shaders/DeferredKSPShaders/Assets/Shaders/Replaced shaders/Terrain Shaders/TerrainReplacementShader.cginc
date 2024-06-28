@@ -8,6 +8,8 @@ float _steepPower;
 float _albedoBrightness;
 float _PlanetOpacity;
 
+float4 _specularColor;
+
 struct Input
 {
     float3 worldPos;
@@ -173,15 +175,22 @@ void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
                                                 dot(worldNormal, i.worldToTangent2.xyz)));
 
 #if defined(ATLAS_TEXTUREARRAY_ON)
-    diffuse *= 1.75;    // My shader is darker than the stock one for some reason so make it brighter
+    diffuse.rgb *= 1.75;    // My shader is darker than the stock one for some reason so make it brighter
 #endif
     
     diffuse.rgb *= i.vertexColor.rgb;
 
     o.Smoothness = diffuse.a;
+    
+#if defined(ATLAS_TEXTUREARRAY_OFF)
+    float specularColorLength = saturate(length(_specularColor.rgb));
+    o.Smoothness *= sqrt(max(specularColorLength, 0.1));
+#endif
+        
     o.Albedo = diffuse * _albedoBrightness;
     o.Normal = tangetSpaceNormal;
     o.Emission = 0.0;
     o.Occlusion = 1.0;
+    //o.Specular = _specularColor.rgb;
     o.Metallic = 0.0;
 }

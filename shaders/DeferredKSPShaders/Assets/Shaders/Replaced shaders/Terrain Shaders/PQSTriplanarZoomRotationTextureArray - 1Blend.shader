@@ -11,6 +11,7 @@
 
         _steepPower("Cliff Blend Power", Float) = 1.0
         _steepNearTiling("Steep Near Tiling", Float) = 1.0
+
         _steepTiling("Steep Far Tiling", Float) = 1.0
 
         _factor("Tiling increase between zoom levels", Float) = 10.0
@@ -18,6 +19,7 @@
         _albedoBrightness("Albedo Brightness", Float) = 2.0
 
         _PlanetOpacity("Opacity of transition to scaled", Float) = 1.0
+        _specularColor("Specular Color", Color) = (0.2, 0.2, 0.2, 0.2)
     }
 
     SubShader
