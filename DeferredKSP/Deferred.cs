@@ -4,26 +4,22 @@ using System.Linq;
 using UnityEngine.Rendering;
 using System.Collections;
 using System;
+using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.1.10")]
+[assembly: AssemblyVersion("1.1.11")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
 {
-    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
+    [KSPAddon(KSPAddon.Startup.MainMenu, true)]
     public class Deferred : MonoBehaviour
     {
         Camera nearCamera, firstLocalCamera, scaledCamera, editorCamera, internalCamera;
         private bool gbufferDebugModeEnabled = false;
+        private Settings settings;
 
-        private static bool incompatibleShadersReplacedInExistingMaterials = false;
-
-        private void Init()
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            var settings = Settings.LoadSettings();
-
-            ReplaceIncompatibleShadersInExistingMaterials();
-
             SetupCustomReflectionsAndAmbient(settings);
 
             HandleCameras();
@@ -39,7 +35,7 @@ namespace Deferred
 
             if (settings.useDitheredTransparency)
             { 
-                Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.Instance.LoadedTextures["DeferredDitherBlueNoise"]);
+                Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.LoadedTextures["DeferredDitherBlueNoise"]);
                 Shader.SetGlobalInt("_DeferredUseDitheredTransparency", 1);
             }
             else
@@ -152,7 +148,7 @@ namespace Deferred
         {
             GraphicsSettings.SetShaderMode(BuiltinShaderType.DeferredReflections, BuiltinShaderMode.UseCustom);
             GraphicsSettings.SetCustomShader(BuiltinShaderType.DeferredReflections,
-                ShaderLoader.Instance.DeferredShaders["Deferred/Internal-DeferredReflections"]);
+                ShaderLoader.DeferredShaders["Deferred/Internal-DeferredReflections"]);
 
             Shader.SetGlobalFloat("deferredAmbientBrightness", settings.ambientBrightness);
             Shader.SetGlobalFloat("deferredAmbientTint", settings.ambientTint);
@@ -163,28 +159,23 @@ namespace Deferred
         // Newer materials get the replaced shaders from shabby which replaces Shader.Find
         private void ReplaceIncompatibleShadersInExistingMaterials()
         {
-            if (!incompatibleShadersReplacedInExistingMaterials && HighLogic.LoadedScene == GameScenes.MAINMENU)
-            { 
-                Debug.Log("[Deferred] Replacing shaders for deferred rendering");
+            Debug.Log("[Deferred] Replacing shaders for deferred rendering");
 
-                foreach (Material mat in Resources.FindObjectsOfTypeAll<Material>())
+            foreach (Material mat in Resources.FindObjectsOfTypeAll<Material>())
+            {
+                string name = mat.shader.name;
+
+                // Some materials have overridden renderqueues not matching the shader ones
+                // These get overridden by replacing the shader
+                // Keep the original ones because they are important for parts with depthMasks
+                int originalRenderqueue = mat.renderQueue;
+
+                if (ShaderLoader.ReplacementShaders.TryGetValue(name, out Shader replacementShader))
                 {
-                    string name = mat.shader.name;
-
-                    // Some materials have overridden renderqueues not matching the shader ones
-                    // These get overridden by replacing the shader
-                    // Keep the original ones because they are important for parts with depthMasks
-                    int originalRenderqueue = mat.renderQueue;
-
-                    if (ShaderLoader.Instance.ReplacementShaders.TryGetValue(name, out Shader replacementShader))
-                    {
-                        mat.shader = replacementShader;
-                    }
-
-                    mat.renderQueue = originalRenderqueue;
+                    mat.shader = replacementShader;
                 }
 
-                incompatibleShadersReplacedInExistingMaterials = true;
+                mat.renderQueue = originalRenderqueue;
             }
         }
 
@@ -224,7 +215,6 @@ namespace Deferred
             }
         }
 
-
         public void ToggleDebugMode()
         {
             if (!RenderingUtils.IsUnifiedCameraMode() && nearCamera != null)
@@ -259,19 +249,17 @@ namespace Deferred
 
         private void Start()
         {
+            DontDestroyOnLoad(this);
+
             windowId = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
-            StartCoroutine(DelayedInit());
-        }
 
-        IEnumerator DelayedInit()
-        {
-            // Wait a few frames for the game to finish setting up
-            for (int i = 0; i < 6; i++)
-            {
-                yield return new WaitForFixedUpdate();
-            }
+            settings = Settings.LoadSettings();
 
-            Init();
+            ReplaceIncompatibleShadersInExistingMaterials();
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            OnSceneLoaded(new Scene(), LoadSceneMode.Single);
         }
 
         public void OnDestroy()
@@ -285,9 +273,11 @@ namespace Deferred
             ToggleCameraDebugMode(scaledCamera, false);
             ToggleCameraDebugMode(internalCamera, false);
             ToggleCameraDebugMode(editorCamera, false);
+
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
-        bool showUI=false;
+        bool showUI = false;
         int windowId;
         Rect windowRect = new Rect(20, 50, 200, 150);
 
@@ -300,7 +290,6 @@ namespace Deferred
 
             if (showUI)
             {
-
                 windowRect = GUILayout.Window(windowId, windowRect, DrawWindow,
                     $"Deferred {Assembly.GetExecutingAssembly().GetName().Version}");
             }

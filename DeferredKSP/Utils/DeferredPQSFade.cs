@@ -29,7 +29,7 @@ namespace Deferred
             backgroundCopyCommandBuffer = new CommandBuffer();
             applyFadeCommandBuffer = new CommandBuffer();
 
-            applyFadeMaterial = new Material(ShaderLoader.Instance.DeferredShaders["Deferred/ApplyPQSFade"]);
+            applyFadeMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/ApplyPQSFade"]);
         }
 
         void OnPreRender()

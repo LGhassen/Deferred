@@ -6,29 +6,17 @@ using System;
 
 namespace Deferred
 {
-    public class ShaderLoader
+    [KSPAddon(KSPAddon.Startup.Instantly, true)]
+    public class ShaderLoader : MonoBehaviour
     {
-        private Dictionary<string, Shader> deferredShaders, replacementShaders;
-        private Dictionary<string, Texture> loadedTextures = new Dictionary<string, Texture>();
+        private static Dictionary<string, Shader> deferredShaders, replacementShaders;
+        private static Dictionary<string, Texture> loadedTextures = new Dictionary<string, Texture>();
 
-        private static ShaderLoader instance;
+        public static Dictionary<string, Shader> ReplacementShaders { get => replacementShaders; }
+        public static Dictionary<string, Shader> DeferredShaders { get => deferredShaders; }
+        public static Dictionary<string, Texture> LoadedTextures { get => loadedTextures; }
 
-        public static ShaderLoader Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new ShaderLoader();
-                }
-                return instance;
-            }
-        }
-        public Dictionary<string, Shader> ReplacementShaders { get => replacementShaders; }
-        public Dictionary<string, Shader> DeferredShaders { get => deferredShaders; }
-        public Dictionary<string, Texture> LoadedTextures { get => loadedTextures; }
-
-        private ShaderLoader()
+        void Start()
         {
             replacementShaders = LoadAssetBundle("replacementshaders.shab");
             deferredShaders = LoadAssetBundle("deferredshaders", loadedTextures);

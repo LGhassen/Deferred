@@ -23,7 +23,7 @@ namespace Deferred
         // This dummy forward-rendered object forces these commandBuffer events to fire
         private void AddDummyForwardObject(int layer)
         {
-            material = new Material(ShaderLoader.Instance.DeferredShaders["Deferred/DummyForwardShader"]);
+            material = new Material(ShaderLoader.DeferredShaders["Deferred/DummyForwardShader"]);
 
             go = GameObject.CreatePrimitive(PrimitiveType.Quad);
 

@@ -65,12 +65,12 @@ namespace Deferred
             flip.filterMode = FilterMode.Bilinear;
             flop.Create();
 
-            SMAAMaterial = new Material(ShaderLoader.Instance.DeferredShaders[("Deferred/SubpixelMorphologicalAntialiasing")]);
+            SMAAMaterial = new Material(ShaderLoader.DeferredShaders[("Deferred/SubpixelMorphologicalAntialiasing")]);
 
             if (areaTex == null)
-                areaTex = (Texture2D)ShaderLoader.Instance.LoadedTextures["AreaTex"];
+                areaTex = (Texture2D)ShaderLoader.LoadedTextures["AreaTex"];
             if (searchTex == null)
-                searchTex = (Texture2D)ShaderLoader.Instance.LoadedTextures["SearchTex"];
+                searchTex = (Texture2D)ShaderLoader.LoadedTextures["SearchTex"];
 
             SMAAMaterial.SetTexture("_AreaTex", areaTex);
             SMAAMaterial.SetTexture("_SearchTex", searchTex);

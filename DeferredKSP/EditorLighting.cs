@@ -86,7 +86,7 @@ namespace Deferred
                 if (mr != null && mr.material != null)
                 {
                     int originalRenderqueue = mr.material.renderQueue;
-                    mr.material.shader = ShaderLoader.Instance.ReplacementShaders["KSP/Scenery/Invisible Shadow Receiver"];
+                    mr.material.shader = ShaderLoader.ReplacementShaders["KSP/Scenery/Invisible Shadow Receiver"];
                     mr.material.renderQueue = originalRenderqueue;
                 }
             }

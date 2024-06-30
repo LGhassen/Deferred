@@ -36,8 +36,8 @@ namespace Deferred
             gbufferCopyCommandBuffer = new CommandBuffer();
             gbufferDisplayCommandBuffer = new CommandBuffer();
 
-            copyGBufferMaterial = new Material(ShaderLoader.Instance.DeferredShaders["Deferred/CopyGBuffer"]);
-            displayGBufferMaterial = new Material(ShaderLoader.Instance.DeferredShaders["Deferred/DisplayGBuffer"]);
+            copyGBufferMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/CopyGBuffer"]);
+            displayGBufferMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/DisplayGBuffer"]);
         }
 
         void OnPreRender()
