@@ -99,7 +99,7 @@ namespace Deferred
 
             if (vabProps != null)
             {
-                vabProps.layer = 0;
+                vabProps.layer = 16; // Same layer as the VAB kerbals, doesn't appear in Kronal Vessel Viewer
             }
         }
 
