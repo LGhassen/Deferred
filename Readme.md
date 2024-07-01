@@ -39,7 +39,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
 | TUFX | Compatible
 | Shaddy | Renders in forward
-| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld
+| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld, or with some of the below-ultra unsupported terrain shaders
 | Waterfall | Compatible
 | FreeIVA | Compatible
 | KerbalVR | Compatible
@@ -48,9 +48,9 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | KerbalKonstructs | Compatible
 | RasterPropMonitor | Compatible
 | Engine Lighting | Compatible
-| B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases/tag/Deferred) (awaiting merge), otherwise renders in forward
+| B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases) (awaiting merge), otherwise renders in forward
 | Kronal Vessel Viewer | Compatible
-| KSRSS  | Compatible in 1.1.9, terrain may be a bit shinier or less shiny than original
+| KSRSS  | Compatible in 1.1.9, local space terrain may be a bit shinier or less shiny than original
 | NeptuneCamera  | Incompatible
 | Camera mods | Unknown/untested
 
