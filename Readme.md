@@ -6,6 +6,28 @@ You'll find an [explanation of what the mod does here](https://www.patreon.com/p
 
 Shabby is needed (currently bundled on the github release but will be separate in future releases and CKAN).
 
+# Install instructions
+
+Go to [releases](https://github.com/LGhassen/Deferred/releases) and grab the latest .zip. Unzip it, merge the provided GameData folder with your game's GameData folder (typically **C:\Program Files\Steam\SteamApps\common\Kerbal Space Program\GameData**).
+
+You should see the following folder structure:
+
+```
+Kerbal Space program
+└──────GameData
+		├──────000_Harmony
+		├──────Shabby
+		└──────zzz_Deferred
+```
+
+Make sure you downloaded the release linked above and not the code, if you see Deferred-Master you messed up and downloaded the code.
+
+Check the mod compatibility list below and update mods as needed.
+
+# Reporting issues
+
+To report an issue add screenshots of the issue, reproduction steps and your KSP.log file, otherwise your report may not be taken into account.
+
 # Limitations/known issues
 ## Terrain shaders
 Only "Ultra" quality terrain shaders are compatible, that includes both atlas and non-atlas terrain shaders. Terrain quality is forced to Ultra when the mod loads.
@@ -33,24 +55,26 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | ------------- | ------------- |------------- |
 | Textures Unlimited  |	Compatible [via fork](https://github.com/LGhassen/TexturesUnlimited/releases), otherwise renders in forward |	|
 | Parallax  | Compatible (you need the latest version) |
-| Conformal decals  | Renders in forward |
+| Conformal decals  | Renders in forward (you need the latest version) |
 | Scatterer | Compatible |
 | EVE-Redux | Compatible |
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
 | TUFX | Compatible
 | Shaddy | Renders in forward
-| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld
+| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld, or with some of the below-ultra unsupported terrain shaders, or other brightness/lighting issues, notably RSS
 | Waterfall | Compatible
-| FreeIVA | Compatible
+| FreeIVA | Mostly compatible, other parts of the craft will appear hollow when see through windows
 | KerbalVR | Compatible
 | PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
 | SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
-| RasterPropMonitor | Compatible
+| RasterPropMonitor | Use compatible [fork](https://github.com/LGhassen/RasterPropMonitor/releases) or wait for merge in official version
+| ASET IVA Props and related mods | Use compatible [RPM fork](https://github.com/LGhassen/RasterPropMonitor/release), otherwise black outline around labels
 | Engine Lighting | Compatible
-| B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases/tag/Deferred) (awaiting merge), otherwise renders in forward
+| B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases) (awaiting merge), otherwise renders in forward
 | Kronal Vessel Viewer | Compatible
-| KSRSS  | Compatible in 1.1.9, terrain may be a bit shinier or less shiny than original
+| KSRSS  | Compatible in 1.1.9, local space terrain may be a bit shinier or less shiny than original
+| RSS  | Reported incompatible with multiple rendering issues, haven't investigated it yet
 | NeptuneCamera  | Incompatible
 | Camera mods | Unknown/untested
 
@@ -168,3 +192,4 @@ Check for values less or equal to 35 greater than 2
                 ReadMask 35
                 Pass Keep
             }
+
