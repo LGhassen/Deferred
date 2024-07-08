@@ -69,7 +69,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
 | RasterPropMonitor | Use compatible [fork](https://github.com/LGhassen/RasterPropMonitor/releases) or wait for merge in official version
-| ASET IVA Props and related mods | Use compatible [RPM fork](https://github.com/LGhassen/RasterPropMonitor/release), otherwise black outline around labels
+| ASET IVA Props and related mods | Use compatible [RPM fork](https://github.com/LGhassen/RasterPropMonitor/releases), otherwise black outline around labels
 | Engine Lighting | Compatible
 | B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases) (awaiting merge), otherwise renders in forward
 | Kronal Vessel Viewer | Compatible
