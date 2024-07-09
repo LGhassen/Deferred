@@ -26,6 +26,7 @@ namespace Deferred
             Emission,
             Ambient,
             Occlusion,
+            ReflectionProbe,
         }
 
         private void Awake()
@@ -59,7 +60,8 @@ namespace Deferred
                 gbufferCopyCommandBuffer.Clear();
                 copyGBufferMaterial.SetInt("GbufferDebugMode", (int)debugMode);
                 copyGBufferMaterial.SetInt("logarithmicLightBuffer", targetCamera.allowHDR ? 0 : 1);
-                
+                copyGBufferMaterial.SetMatrix("CameraToWorld", targetCamera.cameraToWorldMatrix);
+
                 gbufferCopyCommandBuffer.Blit(null, gbufferCopyRT, copyGBufferMaterial);
 
                 targetCamera.AddCommandBuffer(CameraEvent.BeforeLighting, gbufferCopyCommandBuffer);
@@ -67,7 +69,10 @@ namespace Deferred
                 gbufferDisplayCommandBuffer.Clear();
                 gbufferDisplayCommandBuffer.Blit(gbufferCopyRT, new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), displayGBufferMaterial);
 
-                targetCamera.AddCommandBuffer(CameraEvent.BeforeForwardAlpha, gbufferDisplayCommandBuffer);
+                if (debugMode == DebugMode.ReflectionProbe)
+                    targetCamera.AddCommandBuffer(CameraEvent.AfterForwardAlpha, gbufferDisplayCommandBuffer);
+                else
+                    targetCamera.AddCommandBuffer(CameraEvent.BeforeForwardAlpha, gbufferDisplayCommandBuffer);
             }
         }
 
@@ -86,6 +91,7 @@ namespace Deferred
             if (gbufferDisplayCommandBuffer != null)
             {
                 targetCamera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, gbufferDisplayCommandBuffer);
+                targetCamera.RemoveCommandBuffer(CameraEvent.AfterForwardAlpha, gbufferDisplayCommandBuffer);
             }
         }
 
@@ -106,6 +112,7 @@ namespace Deferred
             if (gbufferDisplayCommandBuffer != null)
             {
                 targetCamera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, gbufferDisplayCommandBuffer);
+                targetCamera.RemoveCommandBuffer(CameraEvent.AfterForwardAlpha, gbufferDisplayCommandBuffer);
                 gbufferDisplayCommandBuffer.Clear();
             }
         }

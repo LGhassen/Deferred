@@ -44,19 +44,25 @@
 
             sampler2D _MainTex;
 
+
+            float4x4 CameraToWorld;
+
             fixed4 frag (v2f i) : SV_Target
             {
                 float2 uv = i.uv;
 
                 float depth = tex2Dlod(_CameraDepthTexture, float4(uv, 0.0, 0.0));
 
-#if defined(SHADER_API_GLES) || defined(SHADER_API_GLES3) || defined(SHADER_API_GLCORE)
-                if (depth == 1.0)
-#else
-                if (depth == 0.0)
-#endif
+                if (GbufferDebugMode < 7)
                 {
-                    return 0.0.xxxx;
+    #if defined(SHADER_API_GLES) || defined(SHADER_API_GLES3) || defined(SHADER_API_GLCORE)
+                    if (depth == 1.0)
+    #else
+                    if (depth == 0.0)
+    #endif
+                    {
+                        return 0.0.xxxx;
+                    }
                 }
 
                 [branch]
@@ -85,7 +91,7 @@
                     emission = logarithmicLightBuffer > 0 ? -log2(emission) : emission;
                     return float4(emission, 1.0);
                 }
-                else
+                else if (GbufferDebugMode == 5)
                 {
                     float3 emissionAndAmbient = tex2Dlod(_CameraGBufferTexture3, float4(uv, 0.0, 0.0)).rgb;
                     float3 emission = tex2Dlod(emissionCopyRT, float4(uv, 0.0, 0.0)).rgb;
@@ -96,6 +102,29 @@
                     float3 ambient = max(emissionAndAmbient - emission, 0.0.xxx);
 
                     return float4(ambient, 1.0);
+                }
+                else
+                {
+                    // Reflection probe debug mode
+
+
+                    #if defined(UNITY_REVERSED_Z)
+	                    float4 clipPos = float4(uv, 0.0, 1.0);
+                    #else
+                        float4 clipPos = float4(uv, 1.0, 1.0);
+                    #endif
+
+	                clipPos.xyz = 2.0f * clipPos.xyz - 1.0f;
+
+                    float4 camPos = mul(unity_CameraInvProjection, clipPos);
+	                float4 worldPos = mul(CameraToWorld, camPos);
+
+                    float3 worldDir = normalize(worldPos.xyz/worldPos.w - _WorldSpaceCameraPos);
+
+                    float4 reflection = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, worldDir, 0.0);
+                    reflection.rgb = DecodeHDR(reflection, unity_SpecCube0_HDR);
+
+                    return float4(reflection.rgb, 1.0);
                 }
             }
             ENDCG
