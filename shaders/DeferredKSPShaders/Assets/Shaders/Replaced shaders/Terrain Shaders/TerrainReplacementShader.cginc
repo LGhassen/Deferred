@@ -10,6 +10,10 @@ float _PlanetOpacity;
 
 float4 _specularColor;
 
+// Stock variables that tweak the vertex color
+float _contrast;
+float4 _tintColor;
+
 struct Input
 {
     float3 worldPos;
@@ -52,7 +56,18 @@ void TerrainReplacementVertexShader(inout appdata_full v, out Input o)
     o.atlasTextureArrayStrengths = UnpackAtlasTextureStrengths(v.texcoord2.y);
     
     o.cliffDotProduct = v.texcoord1.y; // This seems to be precalculated in the PQSMod UVPlanetRelativePosition
-    o.vertexColor = v.color;
+    
+#if defined(ATLAS_TEXTUREARRAY_ON)
+    // Use vertexColors as they are for the atlas shader since it looks better. It is only used on stock Kerbin
+    // and not adopted by modders so it doesn't have to be accurate to the original 
+    o.vertexColor.rgb = v.color.rgb;
+#else
+    // Not entirely sure about this, but results are closest to how stock looks
+    o.vertexColor.rgb = lerp(_tintColor.a * _tintColor.rgb, v.color.rgb, _contrast);    
+#endif
+
+    // The alpha channel of the vertex Color contains the relative (0-1) altitude calculated by PQSMod_AltitudeAlpha
+    o.vertexColor.a = v.color.a;
     
     o.screenPos = ComputeScreenPos(UnityObjectToClipPos(v.vertex));
 }
@@ -84,40 +99,13 @@ void SampleZoomLevel(
         #if defined(ATLAS_TEXTUREARRAY_ON)
             SampleAtlasTextures(triplanarWeights, uv, atlasTextureArrayCoordinates, atlasTextureArrayStrengths, diffuseColor, normalX, normalY, normalZ);
         #else
-            SampleNonAtlasTextures(triplanarWeights, uv, textureWeights, diffuseColor, normalX, normalY, normalZ);
+            SampleNonAtlasTextures(triplanarWeights, uv, textureWeights, _lowTiling, _midTiling, _highTiling, _lowBumpTiling, _midBumpTiling,
+                                        _highBumpTiling, cliffDotProduct, diffuseColor, normalX, normalY, normalZ);
         #endif
     }
   
 #if defined(STEEP_TEXTURING_ON)
-    // Sample cliff if needed
-    float4 cliffColor = 0.0.xxxx;
-    float3 cliffNormalX = float3(0.0, 0.0, 1.0), cliffNormalY = float3(0.0, 0.0, 1.0), cliffNormalZ = float3(0.0, 0.0, 1.0);
-    
-    #if defined(ATLAS_TEXTUREARRAY_ON)
-        uv *= _AtlasTiling;
-    #else
-        uv *= _midTiling; // This probably doesn't match stock but I tried using steepTiling and nearSteepTiling and got weird results, probably both ignore zoom levels
-#endif
-    
-    // Triplanar UVs
-    float2 xUV = uv.yz;
-    float2 yUV = uv.xz;
-    float2 zUV = uv.xy;
-    
-    [branch]
-    if (cliffDotProduct > 0.001)
-    {
-        cliffColor = triplanarWeights.x * tex2D(_steepTex, xUV) + triplanarWeights.y * tex2D(_steepTex, yUV) + triplanarWeights.z * tex2D(_steepTex, zUV);
-        cliffNormalX = UnpackNormal(tex2D(_steepBumpMap, xUV));
-        cliffNormalY = UnpackNormal(tex2D(_steepBumpMap, yUV));
-        cliffNormalZ = UnpackNormal(tex2D(_steepBumpMap, zUV));
-    }
-    
-    // Blend the regular results with the cliff/steep ones
-    diffuseColor = lerp(diffuseColor, cliffColor, cliffDotProduct);
-    normalX = lerp(normalX, cliffNormalX, cliffDotProduct);
-    normalY = lerp(normalY, cliffNormalY, cliffDotProduct);
-    normalZ = lerp(normalZ, cliffNormalZ, cliffDotProduct);
+    SampleAndBlendSteep(triplanarWeights, uv, _steepTiling, cliffDotProduct, diffuseColor, normalX, normalY, normalZ);
 #endif
 }
 
@@ -130,39 +118,113 @@ void FindCurrentZoomLevel(float cameraDistance, out float zoomLevel, out float z
     zoomLevel = max(zoomLevel - zoomTransition, 0.0);
 }
 
-void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
-{    
-    float cameraDistance = length(i.worldPos - _WorldSpaceCameraPos);
-    cameraDistance = max(cameraDistance, 3.0); // Got some weird artifacts close to the camera
-
+void SampleZoomableTextures(
+    float cameraDistance,
+    float3 worldPos,
+    float3 triplanarWeights,
+    float cliffDotProduct,
+    float4 atlasTextureArrayCoordinates,
+    float4 atlasTextureArrayStrengths,
+    float3 nonAtlasTextureWeights,
+    out float4 diffuseColor,
+    out float3 normalX,
+    out float3 normalY,
+    out float3 normalZ)
+{
     float zoomLevel, zoomTransition;
     FindCurrentZoomLevel(cameraDistance, zoomLevel, zoomTransition);
     
-    float cliffDotProduct = saturate(i.cliffDotProduct * _steepPower);
-    float3 triplanarWeights = GetTriplanarWeights(i.worldSpaceNormal);
-    
-    float3 nonAtlasTextureWeights = GetNonAtlasTextureWeights(i.vertexColor.a); // The alpha channel of the vertex Color contains the relative (0-1)
-                                                                                // altitude calculated by PQSMod_AltitudeAlpha
-
     // Sample current zoom level
     float4 currentZoomLevelDiffuse = 0.0.xxxx;
     float3 currentZoomLevelNormalX = 0.0.xxx, currentZoomLevelNormalY = 0.0.xxx, currentZoomLevelNormalZ = 0.0.xxx;
     
-    SampleZoomLevel(i.worldPos, triplanarWeights, cliffDotProduct, zoomLevel, i.atlasTextureArrayCoordinates, i.atlasTextureArrayStrengths, nonAtlasTextureWeights,
-                    currentZoomLevelDiffuse, currentZoomLevelNormalX, currentZoomLevelNormalY, currentZoomLevelNormalZ);
+    SampleZoomLevel(worldPos, triplanarWeights, cliffDotProduct, zoomLevel, atlasTextureArrayCoordinates, atlasTextureArrayStrengths,
+                    nonAtlasTextureWeights,currentZoomLevelDiffuse, currentZoomLevelNormalX, currentZoomLevelNormalY, currentZoomLevelNormalZ);
 
+    
     // Sample next zoom level
     float4 nextZoomLevelDiffuse = 0.0.xxxx;
     float3 nextZoomLevelNormalX = 0.0.xxx, nextZoomLevelNormalY = 0.0.xxx, nextZoomLevelNormalZ = 0.0.xxx;
     
-    SampleZoomLevel(i.worldPos, triplanarWeights, cliffDotProduct, zoomLevel + 1, i.atlasTextureArrayCoordinates, i.atlasTextureArrayStrengths, nonAtlasTextureWeights,
-                    nextZoomLevelDiffuse, nextZoomLevelNormalX, nextZoomLevelNormalY, nextZoomLevelNormalZ);
-
+    SampleZoomLevel(worldPos, triplanarWeights, cliffDotProduct, zoomLevel + 1, atlasTextureArrayCoordinates, atlasTextureArrayStrengths,
+                    nonAtlasTextureWeights, nextZoomLevelDiffuse, nextZoomLevelNormalX, nextZoomLevelNormalY, nextZoomLevelNormalZ);
+    
     // Blend results
-    float4 diffuse = lerp(currentZoomLevelDiffuse, nextZoomLevelDiffuse, zoomTransition);
-    float3 normalX = lerp(currentZoomLevelNormalX, nextZoomLevelNormalX, zoomTransition);
-    float3 normalY = lerp(currentZoomLevelNormalY, nextZoomLevelNormalY, zoomTransition);
-    float3 normalZ = lerp(currentZoomLevelNormalZ, nextZoomLevelNormalZ, zoomTransition);
+    diffuseColor = lerp(currentZoomLevelDiffuse, nextZoomLevelDiffuse, zoomTransition);
+    normalX = lerp(currentZoomLevelNormalX, nextZoomLevelNormalX, zoomTransition);
+    normalY = lerp(currentZoomLevelNormalY, nextZoomLevelNormalY, zoomTransition);
+    normalZ = lerp(currentZoomLevelNormalZ, nextZoomLevelNormalZ, zoomTransition);
+}
+
+void SampleLegacyNonZoomableTextures(
+    float cameraDistance,
+    float3 worldPos,
+    float3 triplanarWeights,
+    float cliffDotProduct,
+    float3 nonAtlasTextureWeights,
+    out float4 diffuseColor,
+    out float3 normalX,
+    out float3 normalY,
+    out float3 normalZ)
+{
+    float nearFarTilingTransition = saturate((cameraDistance - _groundTexStart) / (_groundTexEnd - _groundTexStart));
+    
+    // Idk about the 50000.0 but my tiling was too small    
+    float3 uv = (worldPos + _floatingOriginOffset.xyz) / 50000.0;
+
+    float4 nearDiffuse = 0.0.xxxx;
+    float3 nearNormalX = 0.0.xxx, nearNormalY = 0.0.xxx, nearNormalZ = 0.0.xxx;
+    
+#if !defined(SEPARATE_NEAR_FAR_BUMP_MAP_TILINGS_ON)
+    _lowBumpFarTiling = _lowBumpNearTiling;
+    _midBumpFarTiling = _midBumpNearTiling;
+    _highBumpFarTiling = _highBumpNearTiling;
+#endif
+    
+    SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowNearTiling, _midNearTiling, _highNearTiling, _lowBumpNearTiling, _midBumpNearTiling,
+                        _highBumpNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
+    
+#if defined(STEEP_TEXTURING_ON)
+    SampleAndBlendSteep(triplanarWeights, uv, _steepNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
+#endif
+    
+    float4 farDiffuse = 0.0.xxxx;
+    float3 farNormalX = 0.0.xxx, farNormalY = 0.0.xxx, farNormalZ = 0.0.xxx;
+    
+    SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowMultiFactor, _midMultiFactor, _highMultiFactor, _lowBumpFarTiling, _midBumpFarTiling,
+                        _highBumpFarTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
+
+#if defined(STEEP_TEXTURING_ON)
+    SampleAndBlendSteep(triplanarWeights, uv, _steepTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
+#endif
+    
+    // Blend results
+    diffuseColor = lerp(nearDiffuse, farDiffuse, nearFarTilingTransition);
+    normalX = lerp(nearNormalX, farNormalX, nearFarTilingTransition);
+    normalY = lerp(nearNormalY, farNormalY, nearFarTilingTransition);
+    normalZ = lerp(nearNormalZ, farNormalZ, nearFarTilingTransition);
+}
+
+void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
+{    
+    float cameraDistance = length(i.worldPos - _WorldSpaceCameraPos);
+    cameraDistance = max(cameraDistance, 3.0); // Got some weird artifacts close to the camera
+    
+    float cliffDotProduct = saturate(i.cliffDotProduct * _steepPower);
+    float3 triplanarWeights = GetTriplanarWeights(i.worldSpaceNormal);
+    
+    float3 nonAtlasTextureWeights = GetNonAtlasTextureWeights(i.vertexColor.a);
+
+    float4 diffuse = 0.0.xxxx;
+    float3 normalX = 0.0.xxx, normalY = 0.0.xxx, normalZ = 0.0.xxx;
+    
+#if defined(LEGACY_NON_ZOOMABLE_TERRAIN_SHADER)
+    SampleLegacyNonZoomableTextures(cameraDistance, i.worldPos, triplanarWeights, i.cliffDotProduct,
+                            nonAtlasTextureWeights, diffuse, normalX, normalY, normalZ);
+#else
+    SampleZoomableTextures(cameraDistance, i.worldPos, triplanarWeights, i.cliffDotProduct, i.atlasTextureArrayCoordinates,
+                            i.atlasTextureArrayStrengths, nonAtlasTextureWeights, diffuse, normalX, normalY, normalZ);
+#endif
     
     // Calculate the resulting normal from triplanar normals
     float3 worldNormal = CalculateTriplanarWorldNormal(normalX, normalY, normalZ, i.worldSpaceNormal, triplanarWeights);
@@ -174,23 +236,28 @@ void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
                                                 dot(worldNormal, i.worldToTangent1.xyz),
                                                 dot(worldNormal, i.worldToTangent2.xyz)));
 
+
 #if defined(ATLAS_TEXTUREARRAY_ON)
-    diffuse.rgb *= 1.75;    // My shader is darker than the stock one for some reason so make it brighter
+    // Since the atlas shader is only used on stock Kerbin, and not adopted by modders
+    // We can use different color blending that looks better
+    diffuse.rgb *= 1.75 * i.vertexColor.rgb;
+#else
+    // Approximates stock look for the most part, only a little bit off
+    diffuse.rgb = lerp(i.vertexColor.rgb, i.vertexColor.rgb * diffuse.rgb, 0.8).rgb;
 #endif
     
-    diffuse.rgb *= i.vertexColor.rgb;
-
-    o.Smoothness = diffuse.a;
-    
-#if defined(ATLAS_TEXTUREARRAY_OFF)
+#if defined(LEGACY_NON_ZOOMABLE_TERRAIN_SHADER)
+    o.Smoothness = 0.1; // the originals are lambertian so go with low smoothness
+#elif defined(ATLAS_TEXTUREARRAY_OFF)
     float specularColorLength = saturate(length(_specularColor.rgb));
-    o.Smoothness *= sqrt(max(specularColorLength, 0.1));
+    o.Smoothness = sqrt(max(specularColorLength, 0.1)) * diffuse.a;
+#else
+    o.Smoothness = diffuse.a;
 #endif
         
     o.Albedo = diffuse * _albedoBrightness;
     o.Normal = tangetSpaceNormal;
     o.Emission = 0.0;
     o.Occlusion = 1.0;
-    //o.Specular = _specularColor.rgb;
     o.Metallic = 0.0;
 }

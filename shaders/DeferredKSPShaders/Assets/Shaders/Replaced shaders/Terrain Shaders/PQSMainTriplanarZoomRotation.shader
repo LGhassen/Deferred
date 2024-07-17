@@ -1,4 +1,5 @@
-﻿Shader "Terrain/PQS/PQS Triplanar Zoom Rotation Texture Array - 4 Blend"
+﻿// Same as PQS Triplanar zoom rotation but with separate low and high bump textures and no multi_compiles
+Shader "Terrain/PQS/PQS Main Shader - Triplanar Zoom Rotation"
 {
     Properties
     {
@@ -80,9 +81,14 @@
 
         CGPROGRAM
 
-        #pragma multi_compile STEEP_TEXTURING_ON STEEP_TEXTURING_OFF
-        #define ATLAS_TEXTUREARRAY_ON
-        #define ATLAS_TEXTURE_COUNT 4
+        #define STEEP_TEXTURING_ON
+        
+        #define ATLAS_TEXTUREARRAY_OFF
+        #define ATLAS_TEXTURE_COUNT 0
+
+        #define LOW_TEXTURING_ON
+        #define HIGH_TEXTURING_ON
+        #define SEPARATE_LOW_HIGH_BUMP_MAPS_ON
 
         #include "./TerrainReplacementShader.cginc"
         #pragma surface DeferredTerrainReplacementShader Standard vertex:TerrainReplacementVertexShader

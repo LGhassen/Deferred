@@ -1,4 +1,5 @@
-﻿Shader "Terrain/PQS/PQS Triplanar Zoom Rotation Texture Array - 4 Blend"
+﻿// Same as PQS Main Optimized but without multi_compiles -> always having steep mid low texturing
+Shader "Terrain/PQS/PQS Main Shader"
 {
     Properties
     {
@@ -80,9 +81,19 @@
 
         CGPROGRAM
 
-        #pragma multi_compile STEEP_TEXTURING_ON STEEP_TEXTURING_OFF
-        #define ATLAS_TEXTUREARRAY_ON
-        #define ATLAS_TEXTURE_COUNT 4
+        #define STEEP_TEXTURING_ON
+        
+        #define ATLAS_TEXTUREARRAY_OFF
+        #define ATLAS_TEXTURE_COUNT 0
+
+        #define LOW_TEXTURING_ON
+        #define HIGH_TEXTURING_ON
+
+        #define LEGACY_NON_ZOOMABLE_TERRAIN_SHADER
+        
+        #define SEPARATE_LOW_HIGH_BUMP_MAPS_ON
+
+        #define SEPARATE_NEAR_FAR_BUMP_MAP_TILINGS_ON
 
         #include "./TerrainReplacementShader.cginc"
         #pragma surface DeferredTerrainReplacementShader Standard vertex:TerrainReplacementVertexShader
