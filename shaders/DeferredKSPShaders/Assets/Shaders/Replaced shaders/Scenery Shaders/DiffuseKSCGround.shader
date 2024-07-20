@@ -45,7 +45,7 @@ Shader "KSP/Scenery/Diffuse Ground KSC"
         struct Input
         {
             float2 uv_TarmacTexture;
-            float2 uv_BlendMaskTexture;
+            float2 uv2_BlendMaskTexture;
             float3 vertexPos;
             float3 worldPos;
             float3 viewDir;
@@ -60,7 +60,7 @@ Shader "KSP/Scenery/Diffuse Ground KSC"
         void surf(Input i, inout SurfaceOutputStandard o)
         {
             float4 groundColor = tex2D(_TarmacTexture,(i.uv_TarmacTexture));
-            float blendMask = tex2D(_BlendMaskTexture,(i.uv_BlendMaskTexture));
+            float blendMask = tex2D(_BlendMaskTexture,(i.uv2_BlendMaskTexture));
 
             float cameraDistance = length(_WorldSpaceCameraPos - i.worldPos);
 
