@@ -43,10 +43,42 @@ float _lowEnd;
 float _highStart;
 float _highEnd;
 
+// Legacy projection shader, ignoring the high tex in favor of snow because not sure about their altitudes
+sampler2D _deepMultiTex;
+sampler2D _mainMultiTex;
+//sampler2D _highMultiTex;
+sampler2D _snowMultiTex;
+
+// Separate Tiling factors for above 4 textues
+float _deepMultiFactor;
+float _mainMultiFactor;
+//float _highMultiFactor;
+float _snowMultiFactor;
+
+// Altitudes for the above textures
+float _deepStart;
+float _deepEnd;
+
+/*
+float _mainLoStart;
+float _mainLoEnd;
+float _mainHiStart;
+float _mainHiEnd;
+float _hiLoStart;
+float _hiLoEnd;
+float _hiHiStart;
+float _hiHiEnd;
+*/
+
+float _snowStart;
+float _snowEnd;
+
 float3 GetNonAtlasTextureWeights(float relativeAltitude)
 {
     float3 textureWeights;
     
+
+#if !defined (LEGACY_PROJECTION_SHADER)    
     // From _lowStart, we use the low texture then it's weight decreases until it reaches _lowEnd
     // The alpha channel of the vertex Color contains the relative (0-1) altitude calculated by PQSMod_AltitudeAlpha
     textureWeights.x = 1.0 - saturate((relativeAltitude - _lowStart) / (_lowEnd - _lowStart));
@@ -56,6 +88,13 @@ float3 GetNonAtlasTextureWeights(float relativeAltitude)
     
     // In between those two we use the mid texture
     textureWeights.y = 1.0 - textureWeights.x - textureWeights.z;
+#else
+    // Same but with different variables
+    textureWeights.x = 1.0 - saturate((relativeAltitude - _deepStart) / (_deepEnd - _deepStart));
+    textureWeights.z = saturate((relativeAltitude - _snowStart) / (_snowEnd - _snowStart));
+    textureWeights.y = 1.0 - textureWeights.x - textureWeights.z;
+    
+#endif
     
     return textureWeights;
 }
@@ -153,4 +192,16 @@ void SampleNonAtlasTextures(
         SampleTriplanarNormals(_midBumpMap, 1.0, uv * midBumpTiling, normalX, normalY, normalZ);
 #endif
     }
+}
+
+void SampleLegacyProjectionTextures(
+    float3 triplanarWeights,
+    float3 uv,
+    float3 textureStrengths,
+    inout float4 diffuseColor)
+{
+    diffuseColor += textureStrengths.x * SampleTriplanarDiffuse(_deepMultiTex, triplanarWeights, uv * _deepMultiFactor);
+    diffuseColor += textureStrengths.y * SampleTriplanarDiffuse(_mainMultiTex, triplanarWeights, uv * _mainMultiFactor);
+    //diffuseColor += textureStrengths.z * SampleTriplanarDiffuse(_highMultiTex, triplanarWeights, uv * _highMultiFactor);
+    diffuseColor += textureStrengths.z * SampleTriplanarDiffuse(_snowMultiTex, triplanarWeights, uv * _snowMultiFactor);
 }

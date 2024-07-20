@@ -175,34 +175,41 @@ void SampleLegacyNonZoomableTextures(
     float4 nearDiffuse = 0.0.xxxx;
     float3 nearNormalX = 0.0.xxx, nearNormalY = 0.0.xxx, nearNormalZ = 0.0.xxx;
     
-#if !defined(SEPARATE_NEAR_FAR_BUMP_MAP_TILINGS_ON)
-    _lowBumpFarTiling = _lowBumpNearTiling;
-    _midBumpFarTiling = _midBumpNearTiling;
-    _highBumpFarTiling = _highBumpNearTiling;
-#endif
+#if defined(LEGACY_PROJECTION_SHADER)
+    diffuseColor = 0.0.xxxx;
+    normalX = 0.0.xxx; normalY = 0.0.xxx; normalZ = 0.0.xxx;
+    SampleLegacyProjectionTextures(triplanarWeights, uv, nonAtlasTextureWeights, diffuseColor);
+    return;
+#else
+    #if !defined(SEPARATE_NEAR_FAR_BUMP_MAP_TILINGS_ON)
+        _lowBumpFarTiling = _lowBumpNearTiling;
+        _midBumpFarTiling = _midBumpNearTiling;
+        _highBumpFarTiling = _highBumpNearTiling;
+    #endif
     
-    SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowNearTiling, _midNearTiling, _highNearTiling, _lowBumpNearTiling, _midBumpNearTiling,
-                        _highBumpNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
+        SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowNearTiling, _midNearTiling, _highNearTiling, _lowBumpNearTiling, _midBumpNearTiling,
+                            _highBumpNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
     
-#if defined(STEEP_TEXTURING_ON)
-    SampleAndBlendSteep(triplanarWeights, uv, _steepNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
-#endif
+    #if defined(STEEP_TEXTURING_ON)
+        SampleAndBlendSteep(triplanarWeights, uv, _steepNearTiling, cliffDotProduct, nearDiffuse, nearNormalX, nearNormalY, nearNormalZ);
+    #endif
     
-    float4 farDiffuse = 0.0.xxxx;
-    float3 farNormalX = 0.0.xxx, farNormalY = 0.0.xxx, farNormalZ = 0.0.xxx;
+        float4 farDiffuse = 0.0.xxxx;
+        float3 farNormalX = 0.0.xxx, farNormalY = 0.0.xxx, farNormalZ = 0.0.xxx;
     
-    SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowMultiFactor, _midMultiFactor, _highMultiFactor, _lowBumpFarTiling, _midBumpFarTiling,
-                        _highBumpFarTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
+        SampleNonAtlasTextures(triplanarWeights, uv, nonAtlasTextureWeights, _lowMultiFactor, _midMultiFactor, _highMultiFactor, _lowBumpFarTiling, _midBumpFarTiling,
+                            _highBumpFarTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
 
-#if defined(STEEP_TEXTURING_ON)
-    SampleAndBlendSteep(triplanarWeights, uv, _steepTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
-#endif
+    #if defined(STEEP_TEXTURING_ON)
+        SampleAndBlendSteep(triplanarWeights, uv, _steepTiling, cliffDotProduct, farDiffuse, farNormalX, farNormalY, farNormalZ);
+    #endif
     
-    // Blend results
-    diffuseColor = lerp(nearDiffuse, farDiffuse, nearFarTilingTransition);
-    normalX = lerp(nearNormalX, farNormalX, nearFarTilingTransition);
-    normalY = lerp(nearNormalY, farNormalY, nearFarTilingTransition);
-    normalZ = lerp(nearNormalZ, farNormalZ, nearFarTilingTransition);
+        // Blend results
+        diffuseColor = lerp(nearDiffuse, farDiffuse, nearFarTilingTransition);
+        normalX = lerp(nearNormalX, farNormalX, nearFarTilingTransition);
+        normalY = lerp(nearNormalY, farNormalY, nearFarTilingTransition);
+        normalZ = lerp(nearNormalZ, farNormalZ, nearFarTilingTransition);
+#endif
 }
 
 void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
@@ -256,7 +263,12 @@ void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
 #endif
         
     o.Albedo = diffuse * _albedoBrightness;
+    
+#if defined(LEGACY_PROJECTION_SHADER)
+    o.Normal = float3(0.0, 0.0, 1.0);
+#else
     o.Normal = tangetSpaceNormal;
+#endif
     o.Emission = 0.0;
     o.Occlusion = 1.0;
     o.Metallic = 0.0;
