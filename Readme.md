@@ -76,6 +76,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | KSRSS  | Compatible in 1.1.9, local space terrain may be a bit shinier or less shiny than original
 | RSS  | Reported incompatible with multiple rendering issues, haven't investigated it yet
 | NeptuneCamera  | Incompatible
+| ProceduralFairings | Incompatible, white fairings on hover
 | Camera mods | Unknown/untested
 
 # Debug menu
