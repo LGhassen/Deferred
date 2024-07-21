@@ -84,11 +84,15 @@ Shader "KSP/Scenery/Diffuse Ground KSC"
             float4 grass = _GrassColor * lerp(grassColor0, grassColor1, fractionalPart);
             
             // Blend between groundColor and grass based on the blend mask, this appears to be working correctly
-            float4 color = lerp(grass, _TarmacColor * groundColor, blendMask);
-
+            float4 color;
+            color.rgb = lerp(grass.rgb, _TarmacColor.rgb * groundColor, blendMask);
+            
             // I didn't follow my usual blinn-phong conversion logic here and went with something that looks better
-            // since this shader is only used in one place and with one set of textures
-            o.Smoothness = 0.75 * sqrt(sqrt(max(color.a, 0.0000001)));
+            // Also froze the max smoothness since some mods have custom textures with 1.0 specular
+            float tarmacSmoothness = 0.25 * sqrt(max(groundColor.a * _TarmacColor.a, 0.0000001));
+            float grassSmoothness = 0.1 * grass.a;
+
+            o.Smoothness = lerp(grassSmoothness, tarmacSmoothness, blendMask);
 
             o.Albedo = color.rgb;
             o.Normal = float3(0.0, 0.0, 1.0);

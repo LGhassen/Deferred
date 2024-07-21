@@ -1,5 +1,6 @@
 ﻿// This is the same as Diffuse groundColor KSC but with normals and 3 grass textures for some reason
 // I still ignore all the provided scales and only use the first grass Texture here and it looks the same or unnoticeable
+// I used higher smoothness here because specular maps seem to be provided
 Shader "KSP/Scenery/Diffuse Ground KSC Specular"
 {
     Properties
@@ -96,12 +97,17 @@ Shader "KSP/Scenery/Diffuse Ground KSC Specular"
             float3 grassNormal = lerp(grassNormal10, grassNormal11, fractionalPart);
 
             // Blend between groundColor and grass based on the blend mask, this appears to be working correctly
-            float4 color = lerp(grass, _TarmacColor * groundColor, blendMask);
-            float3 normal = lerp(grassNormal, groundNormal, blendMask);
-
+            float4 color;
+            color.rgb = lerp(grass.rgb, _TarmacColor.rgb * groundColor, blendMask);
+            
             // I didn't follow my usual blinn-phong conversion logic here and went with something that looks better
-            // since this shader is only used in one place and with one set of textures
-            o.Smoothness = 0.75 * sqrt(sqrt(max(color.a, 0.0000001)));
+            // Also froze the max smoothness since some mods have custom textures with 1.0 specular
+            float tarmacSmoothness = 0.55 * sqrt(max(groundColor.a * _TarmacColor.a, 0.0000001));
+            float grassSmoothness = 0.1 * grass.a;
+
+            o.Smoothness = lerp(grassSmoothness, tarmacSmoothness, blendMask);
+
+            float3 normal = lerp(grassNormal, groundNormal, blendMask);
 
             o.Albedo = color;
             o.Normal = normal;
