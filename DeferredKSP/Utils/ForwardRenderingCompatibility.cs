@@ -46,6 +46,8 @@ namespace Deferred
             go.transform.parent = transform;
             go.transform.localPosition = Vector3.zero;
             go.SetActive(true);
+
+            go.AddComponent<DeferredReflectionProbeChecker>();
         }
 
         private void OnDestroy()
