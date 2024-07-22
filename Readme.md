@@ -29,16 +29,6 @@ Check the mod compatibility list below and update mods as needed.
 To report an issue add screenshots of the issue, reproduction steps and your KSP.log file, otherwise your report may not be taken into account.
 
 # Limitations/known issues
-## Terrain shaders
-Only "Ultra" quality terrain shaders are compatible, that includes both atlas and non-atlas terrain shaders. Terrain quality is forced to Ultra when the mod loads.
-
-Names of compatible terrain shaders:
-
- - PQSTriplanarZoomRotation.shader
- - PQSTriplanarZoomRotationTextureArray - 1Blend.shader
- - PQSTriplanarZoomRotationTextureArray - 2Blend.shader
- - PQSTriplanarZoomRotationTextureArray - 3Blend.shader
- - PQSTriplanarZoomRotationTextureArray - 4Blend.shader
 
 ## Transparency
 Traditional transparency doesn't work in deferred rendering for opaque objects (only used in the editors in KSP). To emulate transparency, a stylized dissolve effect (left on the below image) is used on fairing-only shaders.
