@@ -43,31 +43,33 @@ Mods that say "renders in forward" means they may appear to render correctly but
 
 | Mod  | Status | Notes |
 | ------------- | ------------- |------------- |
-| Textures Unlimited  |	Compatible [via fork](https://github.com/LGhassen/TexturesUnlimited/releases), otherwise renders in forward |	|
-| Parallax  | Compatible (you need the latest version) |
-| Conformal decals  | Renders in forward (you need the latest version) |
+| Textures Unlimited  |	Compatible via the latest version on CKAN or [github](https://github.com/KSPModStewards/TexturesUnlimited/releases) |	|
+| Parallax  | Compatible via the latest version |
+| Conformal decals  | Renders in forward via the latest version, otherwise incompatible |
 | Scatterer | Compatible |
 | EVE-Redux | Compatible |
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
 | TUFX | Compatible
-| Shaddy | Renders in forward
-| Kopernicus | Mostly compatible, some planet packs have issues with the terrain shader of the homeworld, or with some of the below-ultra unsupported terrain shaders, or other brightness/lighting issues, notably RSS
+| Kopernicus | Compatible
 | Waterfall | Compatible
-| FreeIVA | Mostly compatible, other parts of the craft will appear hollow when see through windows
 | KerbalVR | Compatible
-| PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
 | SimpleAdjustableFairings  | Compatible
 | KerbalKonstructs | Compatible
+| Engine Lighting | Compatible
+| Kronal Vessel Viewer | Compatible
+| KSRSS  | Compatible 
+| RSS  | Compatible
+| PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
 | RasterPropMonitor | Use compatible [fork](https://github.com/LGhassen/RasterPropMonitor/releases) or wait for merge in official version
 | ASET IVA Props and related mods | Use compatible [RPM fork](https://github.com/LGhassen/RasterPropMonitor/releases), otherwise black outline around labels
-| Engine Lighting | Compatible
 | B9 Procedural Wings | Compatible [via fork](https://github.com/LGhassen/B9-PWings-Modified/releases) (awaiting merge), otherwise renders in forward
-| Kronal Vessel Viewer | Compatible
-| KSRSS  | Compatible in 1.1.9, local space terrain may be a bit shinier or less shiny than original
-| RSS  | Reported incompatible with multiple rendering issues, haven't investigated it yet
+| Magpie Mods | If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772)
+| FreeIVA | Mostly compatible, other parts of the craft will appear hollow when see through windows
+| Shaddy | Renders in forward
 | NeptuneCamera  | Incompatible
 | ProceduralFairings | Incompatible, white fairings on hover
 | Camera mods | Unknown/untested
+
 
 # Debug menu
 Using alt + d ( right shift + d on linux) will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
