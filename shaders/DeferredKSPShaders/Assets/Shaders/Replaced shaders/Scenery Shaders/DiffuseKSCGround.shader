@@ -97,6 +97,15 @@ Shader "KSP/Scenery/Diffuse Ground KSC"
             o.Albedo = color.rgb;
             o.Normal = float3(0.0, 0.0, 1.0);
             o.Emission = GetEmission(i.viewDir, o.Normal);
+
+#if UNITY_PASS_DEFERRED
+			// In deferred rendering do not use the flat ambient because Deferred adds its own ambient as a composite of flat ambient and probe
+            // Also do not use #pragma skip_variants LIGHTPROBE_SH because it impacts lighting in forward and some elements can still render in
+			// forward e.g through the VAB scene doors
+			unity_SHAr = 0.0.xxxx;
+			unity_SHAg = 0.0.xxxx;
+			unity_SHAb = 0.0.xxxx;
+#endif
         }
         ENDCG
     }

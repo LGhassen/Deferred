@@ -103,6 +103,15 @@ void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecu
 #if defined (FORWARD_FADE_ON)
     o.Alpha = _Opacity * color.a;
 #endif
+    
+#if UNITY_PASS_DEFERRED
+			// In deferred rendering do not use the flat ambient because Deferred adds its own ambient as a composite of flat ambient and probe
+            // Also do not use #pragma skip_variants LIGHTPROBE_SH because it impacts lighting in forward and some elements can still render in
+			// forward e.g through the VAB scene doors
+			unity_SHAr = 0.0.xxxx;
+			unity_SHAg = 0.0.xxxx;
+			unity_SHAb = 0.0.xxxx;
+#endif
 }
 
 sampler2D _SpecMap;
@@ -139,4 +148,13 @@ void DeferredSpecularMappedReplacementShader(Input i, inout SurfaceOutputStandar
                                // the alpha channel of the color texture. Going to keep the same
                                // behaviour for compatibility with all the existing part mods
     o.Specular = specularColor;
+    
+#if UNITY_PASS_DEFERRED
+			// In deferred rendering do not use the flat ambient because Deferred adds its own ambient as a composite of flat ambient and probe
+            // Also do not use #pragma skip_variants LIGHTPROBE_SH because it impacts lighting in forward and some elements can still render in
+			// forward e.g through the VAB scene doors
+			unity_SHAr = 0.0.xxxx;
+			unity_SHAg = 0.0.xxxx;
+			unity_SHAb = 0.0.xxxx;
+#endif
 }
