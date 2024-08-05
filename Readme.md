@@ -1,14 +1,17 @@
+
 # Deferred - Adding deferred rendering to KSP
 
 You'll find an [explanation of what the mod does here](https://www.patreon.com/posts/deferred-106557481).
-
-# Dependencies
-
-Shabby is needed (currently bundled on the github release but will be separate in future releases and CKAN).
-
 # Install instructions
+## Automatic installation
+Get [CKAN](https://github.com/KSP-CKAN/CKAN/releases) and use it to install Deferred. CKAN is recommended because it automatically handles dependencies and mod conflicts.
 
+## Manual installation
 Go to [releases](https://github.com/LGhassen/Deferred/releases) and grab the latest .zip. Unzip it, merge the provided GameData folder with your game's GameData folder (typically **C:\Program Files\Steam\SteamApps\common\Kerbal Space Program\GameData**).
+
+Get the latest version of [Shabby](https://archive.org/search?query=creator:%22taniwha%22%20shabby) and install it in the same way.
+
+Get the latest version of [HarmonyKSP](https://github.com/KSPModdingLibs/HarmonyKSP) and install it in the same way.
 
 You should see the following folder structure:
 
