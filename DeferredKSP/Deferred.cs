@@ -264,6 +264,8 @@ namespace Deferred
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             OnSceneLoaded(new Scene(), LoadSceneMode.Single);
+
+            KSCModelNormalsFixer.FixKSCModels();
         }
 
         public void OnDestroy()

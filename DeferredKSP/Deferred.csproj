@@ -123,6 +123,7 @@
     <Compile Include="EditorLighting.cs" />
     <Compile Include="Deferred.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Utils\KSCModelNormalsFixer.cs" />
     <Compile Include="Utils\DeferredReflectionProbeChecker.cs" />
     <Compile Include="Utils\IVALightingRotation.cs" />
     <Compile Include="Utils\RefreshLegacyAmbient.cs" />
