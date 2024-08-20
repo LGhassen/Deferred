@@ -17,7 +17,7 @@ namespace Deferred
             probe.refreshMode = UnityEngine.Rendering.ReflectionProbeRefreshMode.EveryFrame;
             probe.timeSlicingMode = UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.IndividualFaces;
 
-            probe.resolution = GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION;
+            probe.resolution = 128 * (int)Mathf.Pow(2, GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION);
 
             // Make the reflection probe light up objects in this range
             probe.size = new Vector3(1000000f, 1000000f, 1000000f);

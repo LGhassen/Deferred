@@ -122,7 +122,7 @@ namespace Deferred
 
             var probe = probeGo.AddComponent<ReflectionProbe>();
 
-            probe.resolution = Mathf.Max(1024, GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION);
+            probe.resolution = Mathf.Max(1024, 128 * (int)Mathf.Pow(2, GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION));
             probe.size = new Vector3(1000000f, 1000000f, 1000000f);
             probe.cullingMask = 1 << 15;
             probe.shadowDistance = 0.0f;
