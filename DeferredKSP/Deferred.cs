@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.2.1")]
+[assembly: AssemblyVersion("1.2.2")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
@@ -19,7 +19,7 @@ namespace Deferred
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            SetupCustomReflectionsAndAmbient(settings);
+            SetupCustomLightingAndAmbientShaders(settings);
 
             HandleCameras();
 
@@ -142,8 +142,14 @@ namespace Deferred
             }
         }
 
-        private static void SetupCustomReflectionsAndAmbient(Settings settings)
+        private static void SetupCustomLightingAndAmbientShaders(Settings settings)
         {
+            // Modified final pass shader for depthMask compatibility in LDR
+            GraphicsSettings.SetShaderMode(BuiltinShaderType.DeferredShading, BuiltinShaderMode.UseCustom);
+            GraphicsSettings.SetCustomShader(BuiltinShaderType.DeferredShading,
+                ShaderLoader.DeferredShaders["Deferred/Internal-DeferredShading"]);
+
+            // Modified reflections pass that also does ambient (so that it's truly deferred)
             GraphicsSettings.SetShaderMode(BuiltinShaderType.DeferredReflections, BuiltinShaderMode.UseCustom);
             GraphicsSettings.SetCustomShader(BuiltinShaderType.DeferredReflections,
                 ShaderLoader.DeferredShaders["Deferred/Internal-DeferredReflections"]);
