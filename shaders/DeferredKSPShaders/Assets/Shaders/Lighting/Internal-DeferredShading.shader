@@ -52,6 +52,12 @@ half4 CalculateLight (unity_v2f_deferred i)
     float atten, fadeDist;
     UnityLight light;
     UNITY_INITIALIZE_OUTPUT(UnityLight, light);
+
+    #if defined(DIRECTIONAL)
+        // Disable fading shadows on the main light so that we can inject cloud shadows and eclipses into the lighting all the way to the horizon
+        unity_ShadowFadeCenterAndType = float4(1e10, 1e10, 1e10, -1);
+    #endif
+
     UnityDeferredCalculateLightParams (i, wpos, uv, light.dir, atten, fadeDist);
 
     light.color = _LightColor.rgb * atten;
