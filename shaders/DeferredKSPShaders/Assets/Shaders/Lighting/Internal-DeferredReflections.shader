@@ -133,6 +133,8 @@ Pass
     ZTest Always
     Blend [_SrcBlend] [_DstBlend]
 
+    Cull Off
+
     ColorMask RGB // Do not overwrite emission alpha channel flagging actual surfaces from depthMasks in LDR
 
     CGPROGRAM
