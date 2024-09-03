@@ -42,6 +42,12 @@ float3 legacyAmbientColor;
 
 half4 frag (unity_v2f_deferred i) : SV_Target
 {
+    [branch]
+    if (useReflectionProbeOnCurrentCamera == 0)
+    {
+        return 0.0.xxxx;
+    }
+
     // Stripped from UnityDeferredCalculateLightParams, refactor into function ?
     i.ray = i.ray * (_ProjectionParams.z / i.ray.z);
     float2 uv = i.uv.xy / i.uv.w;
@@ -72,38 +78,34 @@ half4 frag (unity_v2f_deferred i) : SV_Target
 
     float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
 
-    [branch]
-    if (useReflectionProbeOnCurrentCamera > 0)
-    {
-        // The reflection probe is only ever rendered in one space, not matching IVA orientation
-        // Rotate normals when in IVA to sample the probe correctly
-        float3 actualWorldNormal = data.normalWorld;
-        float3 reflectionProbeSpaceNormal = mul(internalSpaceToWorld, float4(data.normalWorld, 0.0));
-        data.normalWorld = reflectionProbeSpaceNormal;
+    // The reflection probe is only ever rendered in one space, not matching IVA orientation
+    // Rotate normals when in IVA to sample the probe correctly
+    float3 actualWorldNormal = data.normalWorld;
+    float3 reflectionProbeSpaceNormal = mul(internalSpaceToWorld, float4(data.normalWorld, 0.0));
+    data.normalWorld = reflectionProbeSpaceNormal;
 
-        // Unused member don't need to be initialized
-        UnityGIInput d;
-        d.worldPos = mul(internalSpaceToWorld, worldPos);
-        //d.worldViewDir = -eyeVec;
-        d.worldViewDir = mul(internalSpaceToWorld, float4(-eyeVec, 0.0));
-        d.probeHDR[0] = unity_SpecCube0_HDR;
-        d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
+    // Unused member don't need to be initialized
+    UnityGIInput d;
+    d.worldPos = mul(internalSpaceToWorld, worldPos);
+    //d.worldViewDir = -eyeVec;
+    d.worldViewDir = mul(internalSpaceToWorld, float4(-eyeVec, 0.0));
+    d.probeHDR[0] = unity_SpecCube0_HDR;
+    d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
         
-        #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-        d.probePosition[0]  = unity_SpecCube0_ProbePosition;
-        d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
-        d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
-        #endif
+    #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+    d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+    d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+    d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+    #endif
 
-        Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
+    Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
 
-        ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
+    ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
-        ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
-        ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance
+    ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
+    ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance
 
-        data.normalWorld = actualWorldNormal;
-    }
+    data.normalWorld = actualWorldNormal;
 
     float diffuseMagnitude = length(ind.diffuse);
 
