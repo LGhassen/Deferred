@@ -79,9 +79,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     // The reflection probe is only ever rendered in one space, not matching IVA orientation
     // Rotate normals when in IVA to sample the probe correctly
     float3 actualWorldNormal = data.normalWorld;
-    float3 reflectionProbeSpaceNormal = mul(internalSpaceToWorld, float4(data.normalWorld, 0.0));
-    data.normalWorld = reflectionProbeSpaceNormal;
-
+    data.normalWorld = mul(internalSpaceToWorld, float4(data.normalWorld, 0.0));
 
     // Unused member don't need to be initialized
     UnityGIInput d;
