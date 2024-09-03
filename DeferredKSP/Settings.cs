@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Deferred
 {
     public class Settings
@@ -6,6 +8,8 @@ namespace Deferred
         [Persistent] public float ambientTint = 0.7f;
         [Persistent] public bool useSmaaInEditors = true;
         [Persistent] public bool useDitheredTransparency = false;
+        [Persistent] public KeyCode guiModifierKey;
+        [Persistent] public KeyCode guiKey;
 
         public static Settings LoadSettings()
         {

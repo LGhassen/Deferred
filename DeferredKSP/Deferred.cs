@@ -287,7 +287,7 @@ namespace Deferred
 
         void OnGUI()
         {
-            if (GameSettings.MODIFIER_KEY.GetKey() && Input.GetKeyDown(KeyCode.D))
+            if (Input.GetKey(settings.guiModifierKey) && Input.GetKey(settings.guiKey))
             {
                 showUI = true;
             }
