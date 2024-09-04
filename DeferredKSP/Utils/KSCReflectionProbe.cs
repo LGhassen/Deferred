@@ -26,7 +26,7 @@ namespace Deferred
             // Here the local alone is fine as scatterer sky renders on that layer, and its only KSC anyway
             probe.cullingMask = 1 << 15;
 
-            probe.shadowDistance = 0.0f;
+            probe.shadowDistance = 0.01f; // Allows shadow commandBuffers to fire without rendering anything expensive
             probe.hdr = false;
 
             probe.clearFlags = UnityEngine.Rendering.ReflectionProbeClearFlags.SolidColor;
