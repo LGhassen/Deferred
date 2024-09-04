@@ -36,6 +36,11 @@ namespace Deferred
             probe.farClipPlane = 100000f;
 
             probe.enabled = true;
+
+            if (FlightCamera.fetch != null)
+            {
+                go.transform.SetParent(FlightCamera.fetch.transform, false);
+            }
         }
 
         private void OnDestroy()
