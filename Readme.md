@@ -46,10 +46,10 @@ Mods that say "renders in forward" means they may appear to render correctly but
 
 | Mod  | Status | Notes |
 | ------------- | ------------- |------------- |
-| Textures Unlimited  |	Compatible via the latest version on CKAN or [github](https://github.com/KSPModStewards/TexturesUnlimited/releases) |	|
-| Parallax  | Compatible via the latest version |
-| Conformal decals  | Renders in forward via the latest version, otherwise incompatible |
-| B9 Procedural Wings | Compatible via the latest version
+| Textures Unlimited  |	Compatible since version 1.6.0.26 on CKAN or [github](https://github.com/KSPModStewards/TexturesUnlimited/releases) |	|
+| Parallax  | Compatible since version 2.0.8 |
+| Conformal decals  | Renders in forward in 0.2.14, older versions incompatible |
+| B9 Procedural Wings | Compatible since version 0.46.0
 | Scatterer | Compatible |
 | EVE-Redux | Compatible |
 | Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
@@ -64,7 +64,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | KSRSS  | Compatible 
 | RSS  | Compatible
 | PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
-| RasterPropMonitor | Compatible, use the latest official version, no longer need to use my fork
+| RasterPropMonitor | Compatible since version 1.0.1
 | ASET IVA Props and related mods | Compatible, use the latest official version of RPM, otherwise black outline around labels
 | Magpie Mods | If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772)
 | FreeIVA | Mostly compatible, other parts of the craft will appear hollow when see through windows
