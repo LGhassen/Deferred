@@ -67,7 +67,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | RasterPropMonitor | Compatible since version 1.0.1
 | ASET IVA Props and related mods | Compatible, use the latest official version of RPM, otherwise black outline around labels
 | Magpie Mods | If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772)
-| FreeIVA | Mostly compatible, other parts of the craft will appear hollow when see through windows
+| FreeIVA | Fully compatible since version 0.2.19.0, versions before that have other parts of the craft appear hollow when seen through windows
 | Shaddy | Renders in forward
 | NeptuneCamera  | Incompatible
 | ProceduralFairings | Incompatible, white fairings on hover
