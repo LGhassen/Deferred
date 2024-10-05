@@ -69,7 +69,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | Magpie Mods | If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772)
 | FreeIVA | Fully compatible since version 0.2.19.0, versions before that have other parts of the craft appear hollow when seen through windows
 | Shaddy | Renders in forward
-| NeptuneCamera  | Incompatible
+| NeptuneCamera  | Compatible since 4.3, previous versions incompatible
 | ProceduralFairings | Incompatible, white fairings on hover
 | Camera mods | Unknown/untested
 
