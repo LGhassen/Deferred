@@ -283,6 +283,8 @@
                     Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(smoothness, d.worldViewDir, worldNormal, 1.0.xxx);
 
                     color = UnityGI_IndirectSpecular(d, 1.0, g);
+
+                    hitDistance = 1.0;
                 }
 
                 fout output;
