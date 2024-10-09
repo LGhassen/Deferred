@@ -27,6 +27,19 @@ namespace Deferred
         bool useComputeForHiZ = true;
         bool isRunningOpenGL = false;
 
+        public static class SsrShaderPassName
+        {
+            public const int Compose = 0;
+            public const int TraceRays = 1;
+        }
+
+        public static class BlurShaderPassName
+        {
+            public const int DownsampleAndBlurHorizontal = 0;
+            public const int BlurVertical = 1;
+            public const int NormalsAwareBlurCombined = 2;
+            public const int NormalsAwareBlurVertical = 3;
+        }
 
         private void Start()
         {
@@ -34,20 +47,30 @@ namespace Deferred
             RenderingUtils.GetCameraRenderDimensions(targetCamera, out cameraWidth, out cameraHeight);
 
             useComputeForHiZ = SystemInfo.supportsComputeShaders;
-            isRunningOpenGL  = SystemInfo.graphicsDeviceVersion.Contains("OpenGL");
+            isRunningOpenGL = SystemInfo.graphicsDeviceVersion.Contains("OpenGL");
 
             int screenMipCount = CalculateMipLevel(cameraWidth, cameraHeight, 8);
             int hizMipCount = screenMipCount - 1; // Don't copy the built-in camera depth texture into mip 0, reuse it to save one mip
 
             // This will need to resize when taking screenshots
-            int tracingWidth = cameraWidth;
+            int tracingWidth = useHalfResolutionTracing ? cameraWidth / 2 : cameraWidth;
             int tracingHeight = cameraHeight;
 
+            CreateRenderTextures(hizMipCount, tracingWidth, tracingHeight);
+
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quadMesh = Mesh.Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+            Destroy(go);
+
+            SetShaderProperties(screenMipCount);
+            CreateSSRCommandBuffer(screenMipCount, hizMipCount);
+        }
+
+        private void SetShaderProperties(int screenMipCount)
+        {
             if (useHalfResolutionTracing)
             {
-                tracingWidth /= 2;
 
-                // Maybe move these a bit down and set all properties for materials in a single place?
                 ssrMaterial.EnableKeyword("HALF_RESOLUTION_TRACING");
                 blurMaterial.EnableKeyword("HALF_RESOLUTION_TRACING");
             }
@@ -57,25 +80,15 @@ namespace Deferred
                 blurMaterial.DisableKeyword("HALF_RESOLUTION_TRACING");
             }
 
-            CreateRenderTextures(hizMipCount, tracingWidth, tracingHeight);
 
-            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            quadMesh = Mesh.Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
-            Destroy(go);
+            ssrMaterial.SetInt("hiZMipLevelCount", screenMipCount);
+            ssrMaterial.SetVector("ScreenResolution", new Vector2(cameraWidth, cameraHeight));
+            blurMaterial.SetVector("ScreenResolution", new Vector2(cameraWidth, cameraHeight));
 
+            ssrMaterial.SetTexture("hiZTexture", hiZRTflip);
+            ssrMaterial.SetTexture("ScreenColor", screenColorFlip);
 
-            /*
-            clearAmbientCommandBuffer = new CommandBuffer();
-
-            clearAmbientCommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-            clearAmbientCommandBuffer.ClearRenderTarget(false, true, UnityEngine.Color.black);
-
-            // TODO: remove this
-            targetCamera.AddCommandBuffer(CameraEvent.BeforeLighting, clearAmbientCommandBuffer);    // Clear out ambient and reflections before lighting, will add my own in the ssr shader after lighting
-            */
-
-
-            CreateSSRCommandBuffer(screenMipCount, hizMipCount);
+            blurMaterial.SetTexture("ssrHitDistance", ssrHitDistance);
         }
 
         private void CreateSSRCommandBuffer(int screenMipCount, int hizMipCount)
@@ -84,39 +97,29 @@ namespace Deferred
             ssrCommandBuffer.name = "Deferred screenspace reflections";
 
             GenerateHiZ(hizMipCount, ssrCommandBuffer);
-
-            ssrMaterial.SetTexture("hiZTexture", hiZRTflip);
-            ssrMaterial.SetInt("hiZMipLevelCount", screenMipCount);
-            ssrMaterial.SetVector("BufferSize", new Vector2(cameraWidth, cameraHeight)); // rename this variable to screen size or other
-            blurMaterial.SetVector("BufferSize", new Vector2(cameraWidth, cameraHeight));
             
             BlurInputScreenTexture(ssrCommandBuffer);
 
-            ssrCommandBuffer.SetGlobalTexture("ScreenColor", screenColorFlip); // doesn't need to be global, also rename variable
-
             RenderTargetIdentifier[] ssrTargets = { new RenderTargetIdentifier(ssrColorAndConfidence), new RenderTargetIdentifier(ssrHitDistance)};
-
             ssrCommandBuffer.SetRenderTarget(ssrTargets, ssrColorAndConfidence.depthBuffer);
-            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, 1); // tracing pass
-
-            ssrCommandBuffer.SetGlobalTexture("ssrColor", ssrColorAndConfidence);
-            ssrCommandBuffer.SetGlobalTexture("ssrHitDistance", ssrHitDistance);
+            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.TraceRays);
 
             BlurHitDistanceTexture();
-            PerformNormalsAwareScreenBlur();
+
+            PerformNormalsAwareSSRBlur();
             //hiZCommandBuffer.CopyTexture(ssrColorAndConfidence, 0, 0, finalSsrColor, 0, 0);
 
             ssrCommandBuffer.SetGlobalTexture("ssrOutput", finalSsrColor);
 
             ssrCommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, 0); // Compose pass. TODO: do it differently, also put tracing pass first
+            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose); // TODO: do it differently to do the lighting correctly and all
 
             ssrCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // this copies the history, remove it and make it a step to reproject first instead
 
             targetCamera.AddCommandBuffer(CameraEvent.AfterSkybox, ssrCommandBuffer); // change event, needs to be after motion vectors are computed
         }
 
-        private void PerformNormalsAwareScreenBlur()
+        private void PerformNormalsAwareSSRBlur()
         {
             float maxScreenSizeToCover = 0.05f;
             float pixelSizeToCover = maxScreenSizeToCover * Mathf.Max(cameraWidth, cameraHeight);
@@ -138,10 +141,20 @@ namespace Deferred
 
                 ssrCommandBuffer.SetRenderTarget(currentTarget, 0);
                 ssrCommandBuffer.SetGlobalTexture("colorBuffer", previousTarget); // rename this
-                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, iteration == 0 ? 3 : 2); // TODO: name passes
+
+                if (iteration == 0 && useHalfResolutionTracing)
+                { 
+                    ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurVertical);
+                }
+                else
+                {
+                    ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurCombined);
+                }
 
                 if (iteration == 0)
+                {
                     ssrCommandBuffer.SetGlobalInt("isFirstIteration", 0);
+                }
 
                 useFlip = !useFlip;
             }
@@ -149,7 +162,7 @@ namespace Deferred
             ssrCommandBuffer.SetGlobalTexture("ssrColor", currentTarget);
         }
 
-        // This will fuzzy out the edges of objects reflected in rough surfaces, making it look closer to the reference
+        // This will fuzzy out the edges of objects reflected in rough surfaces, making it look closer to the importance-sampled reference
         // I think maybe merge this with the normals aware blur method and do a description there
         // Could also make a reusable blurring method for this and the initial screenColor, code looks similar
         private void BlurHitDistanceTexture()
@@ -157,8 +170,6 @@ namespace Deferred
             Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
 
             ssrCommandBuffer.SetGlobalInt("mipLevelToRead", 0);
-
-            // Blur mip level texture, TODO: change this to blur distance
 
             for (int currentMipLevel = 1; currentMipLevel <= ssrHitDistance.mipmapCount; currentMipLevel++)
             {
@@ -170,14 +181,14 @@ namespace Deferred
                 // Downscale from previous mip Level while blurring horizontally
                 ssrCommandBuffer.SetRenderTarget(ssrHitDistanceBlur, currentMipLevel);
                 ssrCommandBuffer.SetGlobalTexture("colorBuffer", ssrHitDistance);
-                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, 0);
+                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
 
                 ssrCommandBuffer.SetGlobalInt("mipLevelToRead", currentMipLevel);
 
                 // Do vertical blur
                 ssrCommandBuffer.SetRenderTarget(ssrHitDistance, currentMipLevel);
                 ssrCommandBuffer.SetGlobalTexture("colorBuffer", ssrHitDistanceBlur);
-                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, 1);
+                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
             }
         }
 
@@ -217,14 +228,14 @@ namespace Deferred
                 // Downscale from previous mip Level while blurring horizontally
                 cb.SetRenderTarget(screenColorFlop, currentMipLevel);
                 cb.SetGlobalTexture("colorBuffer", screenColorFlip);
-                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, 0);
+                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
 
                 cb.SetGlobalInt("mipLevelToRead", currentMipLevel);
 
                 // Do vertical blur
                 cb.SetRenderTarget(screenColorFlip, currentMipLevel);
                 cb.SetGlobalTexture("colorBuffer", screenColorFlop);
-                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, 1);
+                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
             }
         }
 

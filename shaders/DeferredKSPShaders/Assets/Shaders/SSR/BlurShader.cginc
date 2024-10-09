@@ -59,11 +59,11 @@ sampler2D ssrHitDistance;
 float4 normalsAwareBlurFrag(v2f i) : SV_Target
 {
     float2 halfResUV = i.uv.xy;
-    float2 fullResTexelSize = 1.0 / BufferSize;
+    float2 fullResTexelSize = 1.0 / ScreenResolution;
 
 #if defined(HALF_RESOLUTION_TRACING)
     float2 fullResUV = GetFullResUVFromHalfResUV(i.uv.xy);
-    float2 halfResTexelSize = 1.0 / uint2(BufferSize.x/2u, BufferSize.y); // TODO: maybe pass these in?
+    float2 halfResTexelSize = 1.0 / uint2(ScreenResolution.x/2u, ScreenResolution.y); // TODO: maybe pass these in?
 #else
     float2 fullResUV = i.uv.xy;
     float2 halfResTexelSize = fullResTexelSize;

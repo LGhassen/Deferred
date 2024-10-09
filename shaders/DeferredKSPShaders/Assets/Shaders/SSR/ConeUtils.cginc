@@ -16,7 +16,7 @@ inline float GetConeMipLevel(float hitDistance, float smoothness, out float size
     float coneLength = hitDistance;
     float rightTriangleOppositeSide = coneLength * tan(coneAngle);
 
-    sizeInPixels = 0.75 * rightTriangleOppositeSide * max(BufferSize.x, BufferSize.y); // 0.75  is a fudge  factor to match the
+    sizeInPixels = 0.75 * rightTriangleOppositeSide * max(ScreenResolution.x, ScreenResolution.y); // 0.75  is a fudge  factor to match the
                                                                                        // reference importance sampled version
                 
     float ssrMipLevel = log2(sizeInPixels);
@@ -39,7 +39,7 @@ inline float GetConeMipLevelAndAnisotropicDerivatives(float hitDistance, float3 
     float coneLength = hitDistance;
     float rightTriangleOppositeSide = coneLength * tan(coneAngle);
 
-    float sizeInPixels = 0.75 * rightTriangleOppositeSide * max(BufferSize.x, BufferSize.y); // 0.75  is a fudge  factor to match the reference importance sampled version
+    float sizeInPixels = 0.75 * rightTriangleOppositeSide * max(ScreenResolution.x, ScreenResolution.y); // 0.75  is a fudge  factor to match the reference importance sampled version
                 
     float ssrMipLevel = log2(sizeInPixels);
 

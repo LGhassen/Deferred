@@ -1,5 +1,5 @@
 ﻿int hiZMipLevelCount;
-int2 BufferSize;
+int2 ScreenResolution;
 
 sampler2D hiZTexture;
 
@@ -18,7 +18,7 @@ float GetMinDepth(float2 ray, float level)
 
 int2 GetCellCountInCurrentLevel(int mipLevel)
 {
-    uint2 size = BufferSize;
+    uint2 size = ScreenResolution;
     size = size >> mipLevel;
     
 #if defined(HALF_RESOLUTION_TRACING)
@@ -44,9 +44,9 @@ float FindDistanceToNextCell(float3 rayPosition, float3 viewDirection, int2 cell
                                           (closestYEdge - rayPosition.y) / viewDirection.y);
     
 #if defined(HALF_RESOLUTION_TRACING)
-    float2 mip0cellSize = 0.5 / uint2(uint(BufferSize.x) / 2, BufferSize.y);
+    float2 mip0cellSize = 0.5 / uint2(uint(ScreenResolution.x) / 2, ScreenResolution.y);
 #else
-    float2 mip0cellSize = 0.5 / BufferSize;
+    float2 mip0cellSize = 0.5 / ScreenResolution;
 #endif
     
     // Pick the closest edge, add a small offset to it to really move inside the cell and avoid precision issues
@@ -170,7 +170,7 @@ bool FindHierarchicalRayIntersection(float3 startPosition, float3 viewDirection,
 
 float ApplyEdgeFade(float2 uv)
 {
-    float aspectRatio = (float) BufferSize.y / BufferSize.x;
+    float aspectRatio = (float) ScreenResolution.y / ScreenResolution.x;
 
     float2 distanceToEdge = uv > 0.5.xx ? 1.0 - uv : uv;
     distanceToEdge.y *= aspectRatio;
@@ -181,21 +181,21 @@ float ApplyEdgeFade(float2 uv)
 
 float2 GetFullResUVFromHalfResUV(float2 uv)
 {
-    uint2 currentPixel = uv * uint2(uint(BufferSize.x) / 2, BufferSize.y);
+    uint2 currentPixel = uv * uint2(uint(ScreenResolution.x) / 2, ScreenResolution.y);
     currentPixel.x *= 2;
-    uv = (currentPixel + 0.5.xx) / BufferSize;
+    uv = (currentPixel + 0.5.xx) / ScreenResolution;
     
     return uv;
 }
 
 float2 GetHalfResUVFromFullResUV(float2 uv, out float2 texelSize)
 {
-    uint2 halfResBufferSize = uint2(uint(BufferSize.x) / 2, BufferSize.y);
-    texelSize = 1.0 / halfResBufferSize;
+    uint2 halfResScreenResolution = uint2(uint(ScreenResolution.x) / 2, ScreenResolution.y);
+    texelSize = 1.0 / halfResScreenResolution;
 
-    uint2 currentPixel = uv * BufferSize;
+    uint2 currentPixel = uv * ScreenResolution;
     currentPixel.x /= 2;
-    uv = (currentPixel + 0.5.xx) / halfResBufferSize;
+    uv = (currentPixel + 0.5.xx) / halfResScreenResolution;
     
     return uv;
 }
@@ -234,7 +234,7 @@ float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sample
 
     float2 ssrUV = halfResUV;
 
-    uint2 pixelCoords = uv * BufferSize;
+    uint2 pixelCoords = uv * ScreenResolution;
     bool pixelIsEven = pixelCoords.x % 2u == 0u;
 
     if (!pixelIsEven)

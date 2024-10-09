@@ -211,7 +211,7 @@
             {
                 float confidence = intersectionFound * ApplyEdgeFade(hitPos.xy);
 
-                uint2 pixelsTraveled = abs(hitPos.xy - textureSpacePos.xy) * BufferSize;
+                uint2 pixelsTraveled = abs(hitPos.xy - textureSpacePos.xy) * ScreenResolution;
                 
                 // Prevent self-intersections
                 confidence = pixelsTraveled.x < 1 && pixelsTraveled.y < 1 ? 0.0 : confidence;
