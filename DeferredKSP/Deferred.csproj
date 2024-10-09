@@ -122,6 +122,7 @@
   <ItemGroup>
     <Compile Include="EditorLighting.cs" />
     <Compile Include="Deferred.cs" />
+    <Compile Include="ScreenSpaceReflections\ScreenSpaceReflections.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utils\KSCModelNormalsFixer.cs" />
     <Compile Include="Utils\DeferredReflectionProbeChecker.cs" />

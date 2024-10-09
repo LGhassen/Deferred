@@ -1,0 +1,55 @@
+﻿#pragma kernel GenerateHiZ
+
+// The built-in depth texture is not a UAV and we need to bind the texture as a UAV
+// to be able to read/write to different mip levels at the same time, so bind them separately
+// and use a switch
+Texture2D<float> DepthTexture;
+RWTexture2D<float> ReadRT;
+RWTexture2D<float> WriteRT;
+
+uint usingReverseZ;
+uint firstIteration;
+
+float2 hiZPreviousMipLevelDimensions, hiZCurrentMipLevelDimensions;
+
+[numthreads(8,8,1)]
+void GenerateHiZ (uint3 id : SV_DispatchThreadID)
+{
+    if (any(id.xy > uint2(hiZCurrentMipLevelDimensions)))
+        return;
+    
+    float2 inverseRenderDimensions = 1.0.xx / max(1.0.xx, hiZCurrentMipLevelDimensions);
+    
+    float2 uv = (id.xy + 0.5.xx) * inverseRenderDimensions;
+    
+    int2 startCoords = (uv - 0.5f * inverseRenderDimensions) * hiZPreviousMipLevelDimensions;
+    int2 endCoords = ceil((uv + 0.5f * inverseRenderDimensions) * hiZPreviousMipLevelDimensions);
+
+    startCoords = clamp(startCoords, 0, hiZPreviousMipLevelDimensions);
+    endCoords = clamp(endCoords, 0, hiZPreviousMipLevelDimensions);
+
+    float closestDepth = usingReverseZ > 0.0 ? 0.0 : 1.0;
+
+    for (int y = startCoords.y; y < endCoords.y; y++)
+    {
+        for (int x = startCoords.x; x < endCoords.x; x++)
+        {
+            float previousDepth;
+            
+            [branch]
+            if (firstIteration > 0)
+            {
+                previousDepth = DepthTexture[int2(x, y)];
+            }
+            else
+            {
+                previousDepth = ReadRT[int2(x, y)];
+            }
+            
+            
+            closestDepth = usingReverseZ > 0.0 ? max(closestDepth, previousDepth) : min(closestDepth, previousDepth);
+        }
+    }
+    
+    WriteRT[id.xy] = closestDepth;
+}
