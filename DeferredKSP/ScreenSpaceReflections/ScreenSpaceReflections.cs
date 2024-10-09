@@ -41,6 +41,10 @@ namespace Deferred
             public const int NormalsAwareBlurVertical = 3;
         }
 
+        // Motion vectors render after skybox and before image effects, we need to use this event
+        // to have motion vectors To reproject last frame's lighting+reflections+transparencies
+        public const CameraEvent SSRCameraEvent = CameraEvent.BeforeImageEffectsOpaque;
+
         private void Start()
         {
             targetCamera = GetComponent<Camera>();
@@ -114,9 +118,9 @@ namespace Deferred
             ssrCommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
             ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose); // TODO: do it differently to do the lighting correctly and all
 
-            ssrCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // this copies the history, remove it and make it a step to reproject first instead
+            ssrCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // TODO: This copies the history, remove it and make it a step to reproject first instead
 
-            targetCamera.AddCommandBuffer(CameraEvent.AfterSkybox, ssrCommandBuffer); // change event, needs to be after motion vectors are computed
+            targetCamera.AddCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
         }
 
         private void PerformNormalsAwareSSRBlur()
@@ -321,7 +325,7 @@ namespace Deferred
 
         void Update()
         {
-            // TODO: move to on pre-render for VR and to avoid lag
+            // TODO: move to on pre-render for VR and to avoid 1-frame lag
             // Also shader properties
             // Also remove the inverse matrix not sure we need it
             // Consider even not doing this matrix and doing it all in shader manually
@@ -355,18 +359,30 @@ namespace Deferred
             ReleaseRenderTextures();
 
             if (ssrCommandBuffer != null && targetCamera != null)
-                targetCamera.RemoveCommandBuffer(CameraEvent.AfterSkybox, ssrCommandBuffer);
+            { 
+                targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
+            }
+        }
+
+        private void ReleaseRenderTexture(RenderTexture rt)
+        {
+            if (rt != null)
+            { 
+                rt.Release();
+            }
         }
 
         private void ReleaseRenderTextures()
         {
-            if (hiZRTflip != null)
-                hiZRTflip.Release();
-
-            if (hiZRTflop != null)
-                hiZRTflop.Release();
+            ReleaseRenderTexture(hiZRTflip);
+            ReleaseRenderTexture(hiZRTflop);
+            ReleaseRenderTexture(screenColorFlip);
+            ReleaseRenderTexture(screenColorFlop);
+            ReleaseRenderTexture(ssrColorAndConfidence);
+            ReleaseRenderTexture(finalSsrColor);
+            ReleaseRenderTexture(ssrHitDistance);
+            ReleaseRenderTexture(ssrHitDistanceBlur);
         }
-
 
         public static RenderTexture CreateRenderTexture(int width, int height, RenderTextureFormat format, bool useMips, FilterMode filterMode, int anisoLevel = 0, int mipCount = -1, TextureDimension dimension = TextureDimension.Tex2D, int depth = 0, bool randomReadWrite = false, TextureWrapMode wrapMode = TextureWrapMode.Repeat, bool autoGenerateMips = false)
         {
