@@ -30,6 +30,7 @@ sampler2D _CameraGBufferTexture1;
 sampler2D _CameraGBufferTexture2;
 
 int useReflectionProbeOnCurrentCamera;
+int useSSROnCurrentCamera;
 float deferredAmbientBrightness, deferredAmbientTint;
 float4x4 internalSpaceToWorld; // Transform from internal space to world if on IVA camera, identity matrix otherwise
 
@@ -84,7 +85,6 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     // Unused member don't need to be initialized
     UnityGIInput d;
     d.worldPos = mul(internalSpaceToWorld, worldPos);
-    //d.worldViewDir = -eyeVec;
     d.worldViewDir = mul(internalSpaceToWorld, float4(-eyeVec, 0.0));
     d.probeHDR[0] = unity_SpecCube0_HDR;
     d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
@@ -95,9 +95,12 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
     #endif
 
-    Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
-
-    ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
+    [branch]
+    if (useSSROnCurrentCamera == 0.0)
+    {
+        Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
+        ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
+    }
 
     ind.diffuse = deferredAmbientBrightness * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
     ind.diffuse = lerp(length(ind.diffuse).xxx, ind.diffuse, deferredAmbientTint); // Limit the tint because it overpowers other colors without white balance

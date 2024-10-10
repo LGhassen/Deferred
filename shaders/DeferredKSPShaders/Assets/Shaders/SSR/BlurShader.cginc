@@ -1,5 +1,5 @@
 ﻿sampler2D _CameraDepthTexture;
-sampler2D colorBuffer;
+sampler2D deferredSSRColorBuffer;
 float2 currentMipLevelDimensions;
 int mipLevelToRead;
 int currentMipLevel;
@@ -31,16 +31,16 @@ float4 gaussianBlurFrag(v2f i) : SV_Target
     
 #if defined (COMBINED_TAPS)
     // Combined weights and offsets using 3 taps of bilinear filtering to get 5 taps
-    float3 color = tex2Dlod(colorBuffer, float4(i.uv + float2(-1.213, -1.213) * texelSize, 0.0, mipLevelToRead)) * 0.305f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + float2(0.0, 0.0) * texelSize, 0.0, mipLevelToRead)) * 0.390f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + float2(1.213, 1.213) * texelSize, 0.0, mipLevelToRead)) * 0.305f;
+    float3 color = tex2Dlod(deferredSSRColorBuffer, float4(i.uv + float2(-1.213, -1.213) * texelSize, 0.0, mipLevelToRead)) * 0.305f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + float2(0.0, 0.0) * texelSize, 0.0, mipLevelToRead)) * 0.390f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + float2(1.213, 1.213) * texelSize, 0.0, mipLevelToRead)) * 0.305f;
 #else
     // Separate weights, to be used when reading multiple averaged texels from a previous mipLevel
-    float3 color = tex2Dlod(colorBuffer, float4(i.uv + int2(-2, -2) * texelSize, 0.0, mipLevelToRead)) * 0.061f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + int2(-1, -1) * texelSize, 0.0, mipLevelToRead)) * 0.244f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + int2(0, 0) * texelSize, 0.0, mipLevelToRead)) * 0.390f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + int2(1, 1) * texelSize, 0.0, mipLevelToRead)) * 0.244f;
-    color += tex2Dlod(colorBuffer, float4(i.uv + int2(2, 2) * texelSize, 0.0, mipLevelToRead)) * 0.061f;
+    float3 color = tex2Dlod(deferredSSRColorBuffer, float4(i.uv + int2(-2, -2) * texelSize, 0.0, mipLevelToRead)) * 0.061f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + int2(-1, -1) * texelSize, 0.0, mipLevelToRead)) * 0.244f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + int2(0, 0) * texelSize, 0.0, mipLevelToRead)) * 0.390f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + int2(1, 1) * texelSize, 0.0, mipLevelToRead)) * 0.244f;
+    color += tex2Dlod(deferredSSRColorBuffer, float4(i.uv + int2(2, 2) * texelSize, 0.0, mipLevelToRead)) * 0.061f;
 #endif
 
     return float4(color, 1.0);
@@ -70,7 +70,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
 #endif
 
     float zdepth = tex2Dlod(_CameraDepthTexture, float4(fullResUV, 0.0, 0.0));
-    float4 centerColor = tex2Dlod(colorBuffer, float4(halfResUV, 0.0, 0));
+    float4 centerColor = tex2Dlod(deferredSSRColorBuffer, float4(halfResUV, 0.0, 0));
 
 #if defined(UNITY_REVERSED_Z)
     if (zdepth == 0.0)
@@ -192,7 +192,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
         [branch]
         if (weight > 0.001)
         {
-            float4 sampleColor = tex2Dlod(colorBuffer, float4(sampleHalfResUV, 0.0, 0.0));
+            float4 sampleColor = tex2Dlod(deferredSSRColorBuffer, float4(sampleHalfResUV, 0.0, 0.0));
             
             color += sampleColor * weight;
             totalWeight += weight;

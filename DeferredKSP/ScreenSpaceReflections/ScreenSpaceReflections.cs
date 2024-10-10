@@ -9,7 +9,7 @@ namespace Deferred
 
         int cameraWidth, cameraHeight;
 
-        CommandBuffer ssrCommandBuffer;
+        CommandBuffer ssrCommandBuffer, copyImageCommandBuffer;
 
         RenderTexture hiZRTflip, hiZRTflop;
         RenderTexture screenColorFlip, screenColorFlop;
@@ -66,6 +66,12 @@ namespace Deferred
             quadMesh = Mesh.Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
             Destroy(go);
 
+            ssrMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/ScreenSpaceReflections"]);
+            blurMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/Blur"]);
+            generateHiZMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/GenerateHiZ"]);
+
+            generateHiZComputeShader = ShaderLoader.ComputeShaders["GenerateHiZ"];
+
             SetShaderProperties(screenMipCount);
             CreateSSRCommandBuffer(screenMipCount, hizMipCount);
         }
@@ -116,11 +122,14 @@ namespace Deferred
             ssrCommandBuffer.SetGlobalTexture("ssrOutput", finalSsrColor);
 
             ssrCommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose); // TODO: do it differently to do the lighting correctly and all
-
-            ssrCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // TODO: This copies the history, remove it and make it a step to reproject first instead
+            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose);
 
             targetCamera.AddCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
+
+            copyImageCommandBuffer = new CommandBuffer();
+            copyImageCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // TODO: This copies the history, remove it and make it a step to reproject first instead
+            targetCamera.AddCommandBuffer(CameraEvent.AfterEverything, copyImageCommandBuffer);
+            
         }
 
         private void PerformNormalsAwareSSRBlur()
@@ -144,7 +153,7 @@ namespace Deferred
                 ssrCommandBuffer.SetGlobalFloat("prevBlurOffset", Mathf.Pow(2, iteration - 1));
 
                 ssrCommandBuffer.SetRenderTarget(currentTarget, 0);
-                ssrCommandBuffer.SetGlobalTexture("colorBuffer", previousTarget); // rename this
+                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", previousTarget); // TODO: rename this, it's in multiple places
 
                 if (iteration == 0 && useHalfResolutionTracing)
                 { 
@@ -184,14 +193,14 @@ namespace Deferred
 
                 // Downscale from previous mip Level while blurring horizontally
                 ssrCommandBuffer.SetRenderTarget(ssrHitDistanceBlur, currentMipLevel);
-                ssrCommandBuffer.SetGlobalTexture("colorBuffer", ssrHitDistance);
+                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistance);
                 ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
 
                 ssrCommandBuffer.SetGlobalInt("mipLevelToRead", currentMipLevel);
 
                 // Do vertical blur
                 ssrCommandBuffer.SetRenderTarget(ssrHitDistance, currentMipLevel);
-                ssrCommandBuffer.SetGlobalTexture("colorBuffer", ssrHitDistanceBlur);
+                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistanceBlur);
                 ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
             }
         }
@@ -231,14 +240,14 @@ namespace Deferred
 
                 // Downscale from previous mip Level while blurring horizontally
                 cb.SetRenderTarget(screenColorFlop, currentMipLevel);
-                cb.SetGlobalTexture("colorBuffer", screenColorFlip);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColorFlip);
                 cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
 
                 cb.SetGlobalInt("mipLevelToRead", currentMipLevel);
 
                 // Do vertical blur
                 cb.SetRenderTarget(screenColorFlip, currentMipLevel);
-                cb.SetGlobalTexture("colorBuffer", screenColorFlop);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColorFlop);
                 cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
             }
         }
@@ -354,6 +363,23 @@ namespace Deferred
             }
         }
 
+        public static readonly int useSSROnCurrentCamera = Shader.PropertyToID("useSSROnCurrentCamera");
+
+        void OnPreRender()
+        {
+            Shader.SetGlobalInt(useSSROnCurrentCamera, 1);
+        }
+
+        void OnPostRender()
+        {
+            bool doneRendering = targetCamera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Left;
+
+            if (doneRendering)
+            { 
+                Shader.SetGlobalInt(useSSROnCurrentCamera, 0);
+            }
+        }
+
         void OnDestory()
         {
             ReleaseRenderTextures();
@@ -361,6 +387,11 @@ namespace Deferred
             if (ssrCommandBuffer != null && targetCamera != null)
             { 
                 targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
+            }
+
+            if (copyImageCommandBuffer != null && targetCamera != null)
+            {
+                targetCamera.RemoveCommandBuffer(SSRCameraEvent, copyImageCommandBuffer);
             }
         }
 

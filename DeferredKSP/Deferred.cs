@@ -83,6 +83,15 @@ namespace Deferred
                 {
                     firstLocalCamera.gameObject.AddComponent<RefreshLegacyAmbient>();
                 }
+
+                // if SSR etc
+
+                var screenSpaceReflections = firstLocalCamera.GetComponent<ScreenSpaceReflections>();
+
+                if (screenSpaceReflections == null)
+                {
+                    firstLocalCamera.gameObject.AddComponent<ScreenSpaceReflections>();
+                }
             }
 
             if (scaledCamera != null)
@@ -112,6 +121,8 @@ namespace Deferred
 
             Shader.SetGlobalInt(DisableCameraReflectionProbe.UseReflectionProbeOnCurrentCameraProperty, 1);
             Shader.SetGlobalMatrix(IVALightingRotation.InternalSpaceToWorld, Matrix4x4.identity);
+
+            Shader.SetGlobalInt(ScreenSpaceReflections.useSSROnCurrentCamera, 0);
 
             GameEvents.OnCameraChange.Add(OnCameraChange);
         }
@@ -150,6 +161,7 @@ namespace Deferred
                 ShaderLoader.DeferredShaders["Deferred/Internal-DeferredShading"]);
 
             // Modified reflections pass that also does ambient (so that it's truly deferred)
+            // Note that reflections will be disabled here and done later if SSR is active on said camera
             GraphicsSettings.SetShaderMode(BuiltinShaderType.DeferredReflections, BuiltinShaderMode.UseCustom);
             GraphicsSettings.SetCustomShader(BuiltinShaderType.DeferredReflections,
                 ShaderLoader.DeferredShaders["Deferred/Internal-DeferredReflections"]);

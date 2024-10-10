@@ -61,7 +61,6 @@
                 return o;
             }
 
-            // Deferred reflections and ambient shader from deferred with the SSR added in
             half4 frag (v2f i) : SV_Target
             {
                 i.uv /= i.uv.w;
@@ -124,11 +123,7 @@
                 */
 
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
-
                 ind.specular = lerp(ind.specular, ssr.rgb, ssr.a);
-
-                ind.diffuse = 0.5 * Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), d.probeHDR[0], data.normalWorld, 0.55);
-                ind.diffuse *= data.occlusion;
 
                 half3 rgb = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind).rgb;
 

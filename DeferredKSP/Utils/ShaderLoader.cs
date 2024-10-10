@@ -10,19 +10,23 @@ namespace Deferred
     public class ShaderLoader : MonoBehaviour
     {
         private static Dictionary<string, Shader> deferredShaders, replacementShaders;
+        private static Dictionary<string, ComputeShader> computeShaders = new Dictionary<string, ComputeShader>();
+
         private static Dictionary<string, Texture> loadedTextures = new Dictionary<string, Texture>();
 
         public static Dictionary<string, Shader> ReplacementShaders { get => replacementShaders; }
         public static Dictionary<string, Shader> DeferredShaders { get => deferredShaders; }
+        public static Dictionary<string, ComputeShader> ComputeShaders { get => computeShaders; }
         public static Dictionary<string, Texture> LoadedTextures { get => loadedTextures; }
 
         void Start()
         {
             replacementShaders = LoadAssetBundle("replacementshaders.shab");
-            deferredShaders = LoadAssetBundle("deferredshaders", loadedTextures);
+            deferredShaders = LoadAssetBundle("deferredshaders", loadedTextures, computeShaders);
         }
 
-        public Dictionary<string, Shader> LoadAssetBundle(string bundleName, Dictionary<string, Texture> texturesDictionary = null)
+        public Dictionary<string, Shader> LoadAssetBundle(string bundleName, Dictionary<string, Texture> texturesDictionary = null,
+                                                                             Dictionary<string, ComputeShader> computeShadersDictionary = null)
         {
             Dictionary<string, Shader> loadedShaders = new Dictionary<string, Shader>();
 
@@ -47,6 +51,18 @@ namespace Deferred
                     foreach (Texture texture in textures)
                     {
                         texturesDictionary.Add(texture.name, texture);
+                    }
+                }
+
+                if (computeShadersDictionary != null)
+                {
+                    computeShadersDictionary.Clear();
+
+                    ComputeShader[] computeShaders = bundle.LoadAllAssets<ComputeShader>();
+
+                    foreach (ComputeShader computeShader in computeShaders)
+                    {
+                        computeShadersDictionary.Add(computeShader.name, computeShader);
                     }
                 }
 
