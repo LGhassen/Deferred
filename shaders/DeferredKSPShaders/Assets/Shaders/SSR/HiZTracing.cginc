@@ -109,8 +109,7 @@ bool FindHierarchicalRayIntersection(float3 startPosition, float3 viewDirection,
                         
             float worldRayPlaneDistance = worldRayCameraDistance - worldPlaneCameraDistance;
             
-            //float thickness = max(0.1, 0.01 * worldRayCameraDistance);
-            float thickness = max(1.0, 0.05 * worldRayCameraDistance);
+            float thickness = max(1.0, 0.01 * worldRayCameraDistance);
             
             // We are behind the depth plane, keep marching behind the surface if we are beyond the max thickness
             // But only at mip 0 so we don't skip the actual intersect, otherwise finetune the intersect
