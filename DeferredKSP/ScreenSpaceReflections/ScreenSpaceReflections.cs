@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using static Deferred.RenderingUtils;
 
 namespace Deferred
 {
@@ -9,13 +10,14 @@ namespace Deferred
 
         int cameraWidth, cameraHeight;
 
-        CommandBuffer ssrCommandBuffer, copyImageCommandBuffer;
+        // When VR is enabled we have different commandBuffers per eye
+        HistoryManager<CommandBuffer> ssrCommandBuffer, screenCopyCommandBuffer;
 
-        RenderTexture hiZRTflip, hiZRTflop;
-        RenderTexture screenColorFlip, screenColorFlop;
+        // These are per-eye flip-flop for VR support
+        HistoryManager<RenderTexture> screenColor;
 
-        // Should I use my flip-flop or history manager structures here?
-        RenderTexture ssrColorAndConfidence, finalSsrColor, ssrHitDistance, ssrHitDistanceBlur;
+        // These textures are flip-flop only
+        HistoryManager<RenderTexture> hiZTextures, ssrColor, ssrHitDistance;
 
         public Material ssrMaterial, blurMaterial, generateHiZMaterial;
         public ComputeShader generateHiZComputeShader;
@@ -23,9 +25,10 @@ namespace Deferred
         Mesh quadMesh;
 
         public bool useHalfResolutionTracing = true;
-        
+
         bool useComputeForHiZ = true;
         bool isRunningOpenGL = false;
+        bool supportVR = false;
 
         public static class SsrShaderPassName
         {
@@ -44,11 +47,14 @@ namespace Deferred
         // Motion vectors render after skybox and before image effects, we need to use this event
         // to have motion vectors To reproject last frame's lighting+reflections+transparencies
         public const CameraEvent SSRCameraEvent = CameraEvent.BeforeImageEffectsOpaque;
+        public const CameraEvent ScreenCopyCameraEvent = CameraEvent.AfterForwardAlpha; // Will have to check if I specify the script order manually to get this to render
+        // Before or after TAA, normally it should be after
+        // There's some jittering I'll have to see if that's due to the screen copy or not, will test both, still seems to jitter with a black texture though
 
         private void Start()
         {
             targetCamera = GetComponent<Camera>();
-            RenderingUtils.GetCameraRenderDimensions(targetCamera, out cameraWidth, out cameraHeight);
+            GetCameraRenderDimensions(targetCamera, out cameraWidth, out cameraHeight);
 
             useComputeForHiZ = SystemInfo.supportsComputeShaders;
             isRunningOpenGL = SystemInfo.graphicsDeviceVersion.Contains("OpenGL");
@@ -60,7 +66,9 @@ namespace Deferred
             int tracingWidth = useHalfResolutionTracing ? cameraWidth / 2 : cameraWidth;
             int tracingHeight = cameraHeight;
 
-            CreateRenderTextures(hizMipCount, tracingWidth, tracingHeight);
+            supportVR = VREnabled();
+
+            CreateRenderTextures(hizMipCount, tracingWidth, tracingHeight, supportVR);
 
             var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
             quadMesh = Mesh.Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
@@ -73,7 +81,21 @@ namespace Deferred
             generateHiZComputeShader = ShaderLoader.ComputeShaders["GenerateHiZ"];
 
             SetShaderProperties(screenMipCount);
-            CreateSSRCommandBuffer(screenMipCount, hizMipCount);
+
+            ssrCommandBuffer = new HistoryManager<CommandBuffer>(false, supportVR, false);
+            ssrCommandBuffer[false, true, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, true);
+            
+            if (supportVR)
+            { 
+                ssrCommandBuffer[false, false, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, false);
+            }
+
+            screenCopyCommandBuffer = new HistoryManager<CommandBuffer>(false, supportVR, false);
+            screenCopyCommandBuffer[false, true, 0] = CreateScreenCopyCommandBuffer(true);
+            if (supportVR)
+            {
+                screenCopyCommandBuffer[false, false, 0] = CreateScreenCopyCommandBuffer(false);
+            }
         }
 
         private void SetShaderProperties(int screenMipCount)
@@ -95,44 +117,48 @@ namespace Deferred
             ssrMaterial.SetVector("ScreenResolution", new Vector2(cameraWidth, cameraHeight));
             blurMaterial.SetVector("ScreenResolution", new Vector2(cameraWidth, cameraHeight));
 
-            ssrMaterial.SetTexture("hiZTexture", hiZRTflip);
-            ssrMaterial.SetTexture("ScreenColor", screenColorFlip);
-
-            blurMaterial.SetTexture("ssrHitDistance", ssrHitDistance);
+            ssrMaterial.SetTexture("hiZTexture", hiZTextures[true, false, 0]);
+            blurMaterial.SetTexture("ssrHitDistance", ssrHitDistance[true, false, 0]);
         }
 
-        private void CreateSSRCommandBuffer(int screenMipCount, int hizMipCount)
+        private CommandBuffer CreateSSRCommandBuffer(int screenMipCount, int hizMipCount, bool isVRRightEye)
         {
-            ssrCommandBuffer = new CommandBuffer();
-            ssrCommandBuffer.name = "Deferred screenspace reflections";
+            CommandBuffer commandBuffer = new CommandBuffer();
+            commandBuffer.name = "Deferred screenspace reflections";
 
-            GenerateHiZ(hizMipCount, ssrCommandBuffer);
-            
-            BlurInputScreenTexture(ssrCommandBuffer);
+            GenerateHiZ(hizMipCount, commandBuffer);
 
-            RenderTargetIdentifier[] ssrTargets = { new RenderTargetIdentifier(ssrColorAndConfidence), new RenderTargetIdentifier(ssrHitDistance)};
-            ssrCommandBuffer.SetRenderTarget(ssrTargets, ssrColorAndConfidence.depthBuffer);
-            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.TraceRays);
+            BlurInputScreenTexture(commandBuffer, isVRRightEye);
 
-            BlurHitDistanceTexture();
+            RenderTargetIdentifier[] ssrTargets = { new RenderTargetIdentifier(ssrColor[true, false, 0]),
+                                                    new RenderTargetIdentifier(ssrHitDistance[true, false, 0]) };
 
-            PerformNormalsAwareSSRBlur();
-            //hiZCommandBuffer.CopyTexture(ssrColorAndConfidence, 0, 0, finalSsrColor, 0, 0);
+            commandBuffer.SetRenderTarget(ssrTargets, ssrColor[true, false, 0].depthBuffer);
+            commandBuffer.SetGlobalTexture("ScreenColor", screenColor[true, isVRRightEye, 0]); // TODO: rename property
 
-            ssrCommandBuffer.SetGlobalTexture("ssrOutput", finalSsrColor);
+            commandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.TraceRays);
 
-            ssrCommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-            ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose);
+            BlurHitDistanceTexture(commandBuffer);
 
-            targetCamera.AddCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
+            PerformNormalsAwareSSRBlur(commandBuffer);
 
-            copyImageCommandBuffer = new CommandBuffer();
-            copyImageCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip); // TODO: This copies the history, remove it and make it a step to reproject first instead
-            targetCamera.AddCommandBuffer(CameraEvent.AfterEverything, copyImageCommandBuffer);
-            
+            commandBuffer.SetGlobalTexture("ssrOutput", ssrColor[false, false, 0]); // TODO: rename property
+
+            commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+            commandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.Compose);
+
+            return commandBuffer;
         }
 
-        private void PerformNormalsAwareSSRBlur()
+        private CommandBuffer CreateScreenCopyCommandBuffer(bool isVRRightEye)
+        {
+            var cb = new CommandBuffer();
+            cb.Blit(BuiltinRenderTextureType.CameraTarget, screenColor[true, isVRRightEye, 0]);
+
+            return cb;
+        }
+
+        private void PerformNormalsAwareSSRBlur(CommandBuffer cb)
         {
             float maxScreenSizeToCover = 0.05f;
             float pixelSizeToCover = maxScreenSizeToCover * Mathf.Max(cameraWidth, cameraHeight);
@@ -146,92 +172,45 @@ namespace Deferred
 
             for (int iteration = 0; iteration < iterations; iteration++)
             {
-                currentTarget = useFlip ? finalSsrColor : ssrColorAndConfidence;
-                previousTarget = useFlip ? ssrColorAndConfidence : finalSsrColor;
+                currentTarget = ssrColor[!useFlip, false, 0];
+                previousTarget = ssrColor[useFlip, false, 0];
 
-                ssrCommandBuffer.SetGlobalFloat("blurOffset", Mathf.Pow(2, iteration));
-                ssrCommandBuffer.SetGlobalFloat("prevBlurOffset", Mathf.Pow(2, iteration - 1));
+                cb.SetGlobalFloat("blurOffset", Mathf.Pow(2, iteration));
+                cb.SetGlobalFloat("prevBlurOffset", Mathf.Pow(2, iteration - 1));
 
-                ssrCommandBuffer.SetRenderTarget(currentTarget, 0);
-                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", previousTarget); // TODO: rename this, it's in multiple places
+                cb.SetRenderTarget(currentTarget, 0);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", previousTarget); // TODO: rename this, it's in multiple places in the shaders
 
                 if (iteration == 0 && useHalfResolutionTracing)
-                { 
-                    ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurVertical);
+                {
+                    cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurVertical);
                 }
                 else
                 {
-                    ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurCombined);
+                    cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.NormalsAwareBlurCombined);
                 }
 
                 if (iteration == 0)
                 {
-                    ssrCommandBuffer.SetGlobalInt("isFirstIteration", 0);
+                    cb.SetGlobalInt("isFirstIteration", 0);
                 }
 
                 useFlip = !useFlip;
             }
 
-            ssrCommandBuffer.SetGlobalTexture("ssrColor", currentTarget);
+            cb.SetGlobalTexture("ssrColor", currentTarget);
         }
 
         // This will fuzzy out the edges of objects reflected in rough surfaces, making it look closer to the importance-sampled reference
         // I think maybe merge this with the normals aware blur method and do a description there
         // Could also make a reusable blurring method for this and the initial screenColor, code looks similar
-        private void BlurHitDistanceTexture()
+        private void BlurHitDistanceTexture(CommandBuffer cb)
         {
             Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
 
-            ssrCommandBuffer.SetGlobalInt("mipLevelToRead", 0);
-
-            for (int currentMipLevel = 1; currentMipLevel <= ssrHitDistance.mipmapCount; currentMipLevel++)
-            {
-                ssrCommandBuffer.SetGlobalInt("currentMipLevel", currentMipLevel);
-
-                currentMipLevelDimensions = new Vector2((int)(currentMipLevelDimensions.x / 2f), (int)(currentMipLevelDimensions.y / 2f));
-                ssrCommandBuffer.SetGlobalVector("currentMipLevelDimensions", currentMipLevelDimensions);
-
-                // Downscale from previous mip Level while blurring horizontally
-                ssrCommandBuffer.SetRenderTarget(ssrHitDistanceBlur, currentMipLevel);
-                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistance);
-                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
-
-                ssrCommandBuffer.SetGlobalInt("mipLevelToRead", currentMipLevel);
-
-                // Do vertical blur
-                ssrCommandBuffer.SetRenderTarget(ssrHitDistance, currentMipLevel);
-                ssrCommandBuffer.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistanceBlur);
-                ssrCommandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
-            }
-        }
-
-        private void CreateRenderTextures(int hizMipCount, int tracingWidth, int tracingHeight)
-        {
-            hiZRTflip = CreateRenderTexture("hiZ RT flip", cameraWidth / 2, cameraHeight / 2, RenderTextureFormat.RFloat, true, FilterMode.Point, 0, hizMipCount, TextureDimension.Tex2D, 0, useComputeForHiZ);
-
-            if (!useComputeForHiZ)
-                hiZRTflop = CreateRenderTexture("hiZ RT flop", cameraWidth / 2, cameraHeight / 2, RenderTextureFormat.RFloat, true, FilterMode.Point, 0, hizMipCount);
-
-            screenColorFlip = CreateRenderTexture("screen color flip", cameraWidth, cameraHeight, RenderTextureFormat.ARGBHalf, true, FilterMode.Trilinear, 16, hizMipCount + 1);
-            screenColorFlop = CreateRenderTexture("screen color flop", cameraWidth, cameraHeight, RenderTextureFormat.ARGBHalf, true, FilterMode.Trilinear, 16, hizMipCount + 1);
-
-            ssrColorAndConfidence = CreateRenderTexture(tracingWidth, tracingHeight, RenderTextureFormat.ARGBHalf, false, FilterMode.Bilinear);
-            finalSsrColor = CreateRenderTexture(tracingWidth, tracingHeight, RenderTextureFormat.ARGBHalf, false, FilterMode.Bilinear);
-
-            ssrHitDistance = CreateRenderTexture(tracingWidth, tracingHeight, RenderTextureFormat.RFloat, true, FilterMode.Bilinear, 0, 4);
-            ssrHitDistanceBlur = CreateRenderTexture(tracingWidth, tracingHeight, RenderTextureFormat.RFloat, true, FilterMode.Bilinear, 0, 4);
-        }
-
-        void BlurInputScreenTexture(CommandBuffer cb)
-        {
-            //hiZCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, screenColorFlip);
-
-            // TODO: Use compute shader to get rid of flip flopping
-
-            Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
             cb.SetGlobalInt("mipLevelToRead", 0);
 
-            for (int currentMipLevel = 1; currentMipLevel < screenColorFlip.mipmapCount; currentMipLevel++)
+            for (int currentMipLevel = 1; currentMipLevel <= ssrHitDistance[true, false, 0].mipmapCount; currentMipLevel++)
             {
                 cb.SetGlobalInt("currentMipLevel", currentMipLevel);
 
@@ -239,15 +218,59 @@ namespace Deferred
                 cb.SetGlobalVector("currentMipLevelDimensions", currentMipLevelDimensions);
 
                 // Downscale from previous mip Level while blurring horizontally
-                cb.SetRenderTarget(screenColorFlop, currentMipLevel);
-                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColorFlip);
+                cb.SetRenderTarget(ssrHitDistance[false, false, 0], currentMipLevel);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistance[true, false, 0]);
                 cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
 
                 cb.SetGlobalInt("mipLevelToRead", currentMipLevel);
 
                 // Do vertical blur
-                cb.SetRenderTarget(screenColorFlip, currentMipLevel);
-                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColorFlop);
+                cb.SetRenderTarget(ssrHitDistance[true, false, 0], currentMipLevel);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", ssrHitDistance[false, false, 0]);
+                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
+            }
+        }
+
+        private void CreateRenderTextures(int hizMipCount, int tracingWidth, int tracingHeight, bool supportVR)
+        {
+            hiZTextures = CreateRTHistoryManager(useComputeForHiZ, false, false, cameraWidth / 2, cameraHeight / 2,
+                                                    RenderTextureFormat.RFloat, true, FilterMode.Point,0, hizMipCount,
+                                                    TextureDimension.Tex2D, 0, useComputeForHiZ);
+
+            screenColor = CreateRTHistoryManager(true, supportVR, false, cameraWidth, cameraHeight, RenderTextureFormat.ARGBHalf,
+                                                 true, FilterMode.Trilinear, 16, hizMipCount + 1);
+
+            ssrColor = CreateRTHistoryManager(true, false, false, tracingWidth, tracingHeight, RenderTextureFormat.ARGBHalf,
+                                              false, FilterMode.Bilinear);
+            
+            ssrHitDistance = CreateRTHistoryManager(true, false, false, tracingWidth, tracingHeight, RenderTextureFormat.RFloat,
+                                              true, FilterMode.Bilinear, 0, 4);
+        }
+
+        void BlurInputScreenTexture(CommandBuffer cb, bool isVRRightEye)
+        {
+            // TODO: Use compute shader to get rid of flip flopping
+            Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
+            cb.SetGlobalInt("mipLevelToRead", 0);
+
+            for (int currentMipLevel = 1; currentMipLevel < screenColor[true, isVRRightEye, 0].mipmapCount; currentMipLevel++)
+            {
+                cb.SetGlobalInt("currentMipLevel", currentMipLevel);
+
+                currentMipLevelDimensions = new Vector2((int)(currentMipLevelDimensions.x / 2f), (int)(currentMipLevelDimensions.y / 2f));
+                cb.SetGlobalVector("currentMipLevelDimensions", currentMipLevelDimensions);
+
+                // Downscale from previous mip Level while blurring horizontally
+                cb.SetRenderTarget(screenColor[false, isVRRightEye, 0], currentMipLevel);
+
+                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColor[true, isVRRightEye, 0]);
+                cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.DownsampleAndBlurHorizontal);
+
+                cb.SetGlobalInt("mipLevelToRead", currentMipLevel);
+
+                // Do vertical blur
+                cb.SetRenderTarget(screenColor[true, isVRRightEye, 0], currentMipLevel);
+                cb.SetGlobalTexture("deferredSSRColorBuffer", screenColor[false, isVRRightEye, 0]);
                 cb.DrawMesh(quadMesh, Matrix4x4.identity, blurMaterial, 0, BlurShaderPassName.BlurVertical);
             }
         }
@@ -273,8 +296,8 @@ namespace Deferred
 
             for (int currentMipLevel = 0; currentMipLevel < hizMipCount; currentMipLevel++)
             {
-                RenderTexture currentHiZTarget = useFlip ? hiZRTflip : hiZRTflop;
-                RenderTexture previousHiZTarget = useFlip ? hiZRTflop : hiZRTflip;
+                RenderTexture currentHiZTarget = hiZTextures[useFlip, false, 0];
+                RenderTexture previousHiZTarget = hiZTextures[!useFlip, false, 0];
 
                 cb.SetRenderTarget(currentHiZTarget, currentMipLevel);
                 cb.SetGlobalTexture("PreviousHiZTexture", currentMipLevel == 0 ? new RenderTargetIdentifier(BuiltinRenderTextureType.ResolvedDepth) : previousHiZTarget);
@@ -294,7 +317,7 @@ namespace Deferred
                 // This is only when not using compute
                 if (!useFlip)
                 {
-                    cb.CopyTexture(hiZRTflop, 0, currentMipLevel, hiZRTflip, 0, currentMipLevel);
+                    cb.CopyTexture(hiZTextures[!useFlip, false, 0], 0, currentMipLevel, hiZTextures[useFlip, false, 0], 0, currentMipLevel);
                 }
 
                 useFlip = !useFlip;
@@ -316,8 +339,8 @@ namespace Deferred
                 previousMipLevelDimensions = currentMipLevelDimensions;
                 currentMipLevelDimensions = new Vector2((int)(currentMipLevelDimensions.x / 2f), (int)(currentMipLevelDimensions.y / 2f));
 
-                cb.SetComputeTextureParam(generateHiZComputeShader, 0, "WriteRT", hiZRTflip, currentMipLevel);
-                cb.SetComputeTextureParam(generateHiZComputeShader, 0, "ReadRT", hiZRTflip, Mathf.Max(currentMipLevel - 1, 0));
+                cb.SetComputeTextureParam(generateHiZComputeShader, 0, "WriteRT", hiZTextures[true, false, 0], currentMipLevel);
+                cb.SetComputeTextureParam(generateHiZComputeShader, 0, "ReadRT", hiZTextures[true, false, 0], Mathf.Max(currentMipLevel - 1, 0));
 
                 cb.SetComputeVectorParam(generateHiZComputeShader, "hiZPreviousMipLevelDimensions", previousMipLevelDimensions);
                 cb.SetComputeVectorParam(generateHiZComputeShader, "hiZCurrentMipLevelDimensions", currentMipLevelDimensions);
@@ -332,12 +355,17 @@ namespace Deferred
             }
         }
 
-        void Update()
+        public static readonly int useSSROnCurrentCamera = Shader.PropertyToID("useSSROnCurrentCamera");
+
+        void OnPreRender()
         {
-            // TODO: move to on pre-render for VR and to avoid 1-frame lag
-            // Also shader properties
-            // Also remove the inverse matrix not sure we need it
-            // Consider even not doing this matrix and doing it all in shader manually
+            Shader.SetGlobalInt(useSSROnCurrentCamera, 1);
+
+            bool isVRRightEye = targetCamera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right;
+
+            targetCamera.AddCommandBuffer(SSRCameraEvent, ssrCommandBuffer[true, isVRRightEye, 0]);
+            targetCamera.AddCommandBuffer(ScreenCopyCameraEvent, screenCopyCommandBuffer[true, isVRRightEye, 0]);
+
             if (ssrMaterial != null)
             {
                 var textureSpaceProjectionMatrix = new Matrix4x4();
@@ -356,26 +384,24 @@ namespace Deferred
 
                 textureSpaceProjectionMatrix.SetRow(3, new Vector4(0f, 0f, 0f, 1f));
 
-                var projectionMatrix = GL.GetGPUProjectionMatrix(targetCamera.projectionMatrix, false);
+                var projectionMatrix = GL.GetGPUProjectionMatrix(targetCamera.GetStereoNonJitteredProjectionMatrix(isVRRightEye ? Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left), false);
                 textureSpaceProjectionMatrix *= projectionMatrix;
 
                 ssrMaterial.SetMatrix("textureSpaceProjectionMatrix", textureSpaceProjectionMatrix); // maybe just do these in shader?
             }
         }
 
-        public static readonly int useSSROnCurrentCamera = Shader.PropertyToID("useSSROnCurrentCamera");
-
-        void OnPreRender()
-        {
-            Shader.SetGlobalInt(useSSROnCurrentCamera, 1);
-        }
-
         void OnPostRender()
         {
+            bool isVRRightEye = targetCamera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right;
+
+            targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer[true, isVRRightEye, 0]);
+            targetCamera.RemoveCommandBuffer(ScreenCopyCameraEvent, screenCopyCommandBuffer[true, isVRRightEye, 0]);
+
             bool doneRendering = targetCamera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Left;
 
             if (doneRendering)
-            { 
+            {
                 Shader.SetGlobalInt(useSSROnCurrentCamera, 0);
             }
         }
@@ -384,66 +410,42 @@ namespace Deferred
         {
             ReleaseRenderTextures();
 
-            if (ssrCommandBuffer != null && targetCamera != null)
-            { 
-                targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer);
-            }
-
-            if (copyImageCommandBuffer != null && targetCamera != null)
-            {
-                targetCamera.RemoveCommandBuffer(SSRCameraEvent, copyImageCommandBuffer);
-            }
+            RemoveAndReleaseCommandBuffers();
         }
 
-        private void ReleaseRenderTexture(RenderTexture rt)
+        private void RemoveAndReleaseCommandBuffers()
         {
-            if (rt != null)
-            { 
-                rt.Release();
+            if (targetCamera != null)
+            {
+                targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer[true, true, 0]);
+                targetCamera.RemoveCommandBuffer(ScreenCopyCameraEvent, screenCopyCommandBuffer[true, true, 0]);
+
+                ssrCommandBuffer[true, true, 0].Release();
+                screenCopyCommandBuffer[true, true, 0].Release();
+
+                ssrCommandBuffer[true, true, 0] = null;
+                screenCopyCommandBuffer[true, true, 0] = null;
+
+                if (supportVR)
+                {
+                    targetCamera.RemoveCommandBuffer(SSRCameraEvent, ssrCommandBuffer[true, false, 0]);
+                    targetCamera.RemoveCommandBuffer(ScreenCopyCameraEvent, screenCopyCommandBuffer[true, false, 0]);
+
+                    ssrCommandBuffer[true, false, 0].Release();
+                    screenCopyCommandBuffer[true, false, 0].Release();
+
+                    ssrCommandBuffer[true, false, 0] = null;
+                    screenCopyCommandBuffer[true, false, 0] = null;
+                }
             }
         }
 
         private void ReleaseRenderTextures()
         {
-            ReleaseRenderTexture(hiZRTflip);
-            ReleaseRenderTexture(hiZRTflop);
-            ReleaseRenderTexture(screenColorFlip);
-            ReleaseRenderTexture(screenColorFlop);
-            ReleaseRenderTexture(ssrColorAndConfidence);
-            ReleaseRenderTexture(finalSsrColor);
-            ReleaseRenderTexture(ssrHitDistance);
-            ReleaseRenderTexture(ssrHitDistanceBlur);
-        }
-
-        public static RenderTexture CreateRenderTexture(int width, int height, RenderTextureFormat format, bool useMips, FilterMode filterMode, int anisoLevel = 0, int mipCount = -1, TextureDimension dimension = TextureDimension.Tex2D, int depth = 0, bool randomReadWrite = false, TextureWrapMode wrapMode = TextureWrapMode.Repeat, bool autoGenerateMips = false)
-        {
-            RenderTexture rt;
-
-            if (mipCount == -1)
-                rt = new RenderTexture(width, height, 0, format);
-            else
-                rt = new RenderTexture(width, height, 0, format, mipCount);
-
-            rt.anisoLevel = 1;
-            rt.antiAliasing = 1;
-            rt.dimension = dimension;
-            rt.volumeDepth = depth;
-            rt.useMipMap = useMips;
-            rt.autoGenerateMips = autoGenerateMips;
-            rt.filterMode = filterMode;
-            rt.enableRandomWrite = randomReadWrite;
-            rt.wrapMode = wrapMode;
-            rt.anisoLevel = anisoLevel;
-            rt.Create();
-
-            return rt;
-        }
-
-        public static RenderTexture CreateRenderTexture(string name, int width, int height, RenderTextureFormat format, bool useMips, FilterMode filterMode, int anisoLevel = 0, int mipCount = -1, TextureDimension dimension = TextureDimension.Tex2D, int depth = 0, bool randomReadWrite = false, TextureWrapMode wrapMode = TextureWrapMode.Repeat, bool autoGenerateMips = false)
-        {
-            RenderTexture rt = CreateRenderTexture(width, height, format, useMips, filterMode, anisoLevel, mipCount, dimension, depth, randomReadWrite, wrapMode, autoGenerateMips);
-            rt.name = name;
-            return rt;
+            ReleaseRTHistoryManager(ssrColor);
+            ReleaseRTHistoryManager(ssrHitDistance);
+            ReleaseRTHistoryManager(screenColor);
+            ReleaseRTHistoryManager(hiZTextures);
         }
 
         public int CalculateMipLevel(int textureWidth, int textureHeight, int targetSize)
