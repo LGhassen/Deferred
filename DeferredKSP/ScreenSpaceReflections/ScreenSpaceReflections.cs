@@ -47,9 +47,9 @@ namespace Deferred
         // Motion vectors render after skybox and before image effects, we need to use this event
         // to have motion vectors To reproject last frame's lighting+reflections+transparencies
         public const CameraEvent SSRCameraEvent = CameraEvent.BeforeImageEffectsOpaque;
-        public const CameraEvent ScreenCopyCameraEvent = CameraEvent.AfterForwardAlpha; // Will have to check if I specify the script order manually to get this to render
-        // Before or after TAA, normally it should be after
-        // There's some jittering I'll have to see if that's due to the screen copy or not, will test both, still seems to jitter with a black texture though
+
+        // This will be done after TAA, they use the same event but TAA's CB is added earlier in OnPreCull
+        public const CameraEvent ScreenCopyCameraEvent = CameraEvent.AfterForwardAlpha;
 
         private void Start()
         {
@@ -384,7 +384,14 @@ namespace Deferred
 
                 textureSpaceProjectionMatrix.SetRow(3, new Vector4(0f, 0f, 0f, 1f));
 
-                var projectionMatrix = GL.GetGPUProjectionMatrix(targetCamera.GetStereoNonJitteredProjectionMatrix(isVRRightEye ? Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left), false);
+                Matrix4x4 cameraProjectionMatrix;
+
+                if (supportVR)
+                    cameraProjectionMatrix = targetCamera.GetStereoProjectionMatrix(isVRRightEye ? Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left);
+                else
+                    cameraProjectionMatrix = targetCamera.projectionMatrix;
+
+                Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cameraProjectionMatrix, false);
                 textureSpaceProjectionMatrix *= projectionMatrix;
 
                 ssrMaterial.SetMatrix("textureSpaceProjectionMatrix", textureSpaceProjectionMatrix); // maybe just do these in shader?
