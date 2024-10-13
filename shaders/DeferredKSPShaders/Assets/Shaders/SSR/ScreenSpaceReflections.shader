@@ -153,9 +153,9 @@
             #include "HiZTracing.cginc"
             #include "ConeUtils.cginc"
 
-            Texture2D ScreenColor;
+            Texture2D SSRScreenColor;
             SamplerState sampler_trilinear_clamp;
-            SamplerState sampler_ScreenColor;
+            SamplerState sampler_SSRScreenColor;
 
             float4x4 textureSpaceProjectionMatrix;
 
@@ -206,7 +206,7 @@
             {
                 float confidence = intersectionFound * ApplyEdgeFade(hitPos.xy);
 
-                uint2 pixelsTraveled = abs(hitPos.xy - textureSpacePos.xy) * ScreenResolution;
+                uint2 pixelsTraveled = abs(hitPos.xy - textureSpacePos.xy) * SSRScreenResolution;
                 
                 // Prevent self-intersections
                 confidence = pixelsTraveled.x < 1 && pixelsTraveled.y < 1 ? 0.0 : confidence;
@@ -266,7 +266,7 @@
                 [branch]
                 if (confidence > 0.0)
                 {
-                    color = ScreenColor.SampleGrad(sampler_ScreenColor, hitPos, ddx, ddy);
+                    color = SSRScreenColor.SampleGrad(sampler_SSRScreenColor, hitPos, ddx, ddy);
                 }
                 else // use the reflection probe color anyway because it helps when we use it for blurring the final result
                 {
@@ -340,6 +340,7 @@
                 
                 float2 uv = i.uv.xy - motion;
 
+                
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
 
 #if defined(UNITY_REVERSED_Z)

@@ -184,6 +184,65 @@ namespace Deferred
             }
         }
 
+        public static void CopyRTHistoryManager(HistoryManager<RenderTexture> src, HistoryManager<RenderTexture> dst)
+        {
+            src.GetDimensions(out int srcX, out int srcY, out int srcZ);
+            dst.GetDimensions(out int dstX, out int dstY, out int dstZ);
+
+            if (srcX != dstX || srcY != dstY || srcZ != dstZ)
+            {
+                Debug.LogError("Source and destination HistoryManagers do not have matching dimensions.");
+                return;
+            }
+
+            for (int i = 0; i < srcX; i++)
+            {
+                for (int j = 0; j < srcY; j++)
+                {
+                    for (int k = 0; k < srcZ; k++)
+                    {
+                        RenderTexture srcRT = src[i, j, k];
+                        RenderTexture dstRT = dst[i, j, k];
+
+                        if (srcRT != null && dstRT != null)
+                        {
+                            Graphics.Blit(srcRT, dstRT);
+                        }
+                        else
+                        {
+                            Debug.LogError($"HistoryManager RenderTexture is null at indices ({i}, {j}, {k}) in either src or dst.");
+                        }
+                    }
+                }
+            }
+        }
+
+
+        public static void ReleaseCBHistoryManager(HistoryManager<CommandBuffer> historyManager)
+        {
+            if (historyManager != null)
+            {
+                historyManager.GetDimensions(out int x, out int y, out int z);
+
+                for (int i = 0; i < x; i++)
+                {
+                    for (int j = 0; j < y; j++)
+                    {
+                        for (int k = 0; k < z; k++)
+                        {
+                            var cb = historyManager[i, j, k];
+                            if (cb != null)
+                            {
+                                cb.Release();
+                            }
+
+                            historyManager[i, j, k] = null;
+                        }
+                    }
+                }
+            }
+        }
+
         public static RenderTexture CreateRenderTexture(int width, int height, RenderTextureFormat format, bool useMips, FilterMode filterMode, int anisoLevel = 0, int mipCount = -1,
                                                         TextureDimension dimension = TextureDimension.Tex2D, int depth = 0, bool randomReadWrite = false,
                                                         TextureWrapMode wrapMode = TextureWrapMode.Repeat, bool autoGenerateMips = false)

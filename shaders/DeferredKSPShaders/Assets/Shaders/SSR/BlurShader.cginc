@@ -59,11 +59,11 @@ sampler2D ssrHitDistance;
 float4 normalsAwareBlurFrag(v2f i) : SV_Target
 {
     float2 halfResUV = i.uv.xy;
-    float2 fullResTexelSize = 1.0 / ScreenResolution;
+    float2 fullResTexelSize = 1.0 / SSRScreenResolution;
 
 #if defined(HALF_RESOLUTION_TRACING)
     float2 fullResUV = GetFullResUVFromHalfResUV(i.uv.xy);
-    float2 halfResTexelSize = 1.0 / uint2(ScreenResolution.x/2u, ScreenResolution.y); // TODO: maybe pass these in?
+    float2 halfResTexelSize = 1.0 / uint2(SSRScreenResolution.x/2u, SSRScreenResolution.y); // TODO: maybe pass these in?
 #else
     float2 fullResUV = i.uv.xy;
     float2 halfResTexelSize = fullResTexelSize;
@@ -125,7 +125,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
     GetConeMipLevel(hitDistance, smoothness, sizeInPixels);
 
     float blurStrength = 1.0;
-
+    
     if (sizeInPixels <= blurOffset)
     {
         blurStrength = saturate((sizeInPixels - prevBlurOffset) / (blurOffset - prevBlurOffset));
@@ -135,6 +135,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
     {
         return centerColor;
     }
+
 
     float2 offsetSize = blurOffset.xx;
 
