@@ -291,5 +291,76 @@
 
             ENDCG
         }
+
+        Pass  // Pass 2 reproject previous frame color (including shading + transparencies) using motion vectors and depth
+        {
+            CGPROGRAM
+
+            #pragma vertex vert
+
+            #include "UnityCG.cginc"
+
+            #pragma target 3.0
+            #pragma fragment frag
+
+            #include "UnityCG.cginc"
+
+            sampler2D _CameraMotionVectorsTexture;
+            sampler2D _CameraDepthTexture;
+            
+            sampler2D lastFrameColor;
+            sampler2D currentFrameColor;
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float4 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+
+            v2f vert (appdata v)
+            {
+                v2f o;
+				o.vertex = float4(v.vertex.xy * 2.0, 0.0, 1.0);
+                o.uv = ComputeScreenPos(o.vertex);
+
+                return o;
+            }
+
+            half4 frag (v2f i) : SV_Target
+            {
+                i.uv /= i.uv.w;
+
+                float2 motion = tex2Dlod(_CameraMotionVectorsTexture, float4(i.uv.xy, 0.0, 0.0));
+                
+                float2 uv = i.uv.xy - motion;
+
+                float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
+
+#if defined(UNITY_REVERSED_Z)
+                if (zdepth == 0.0)
+#else
+                if (zdepth == 1.0)
+#endif
+                {
+                    // Sky and clouds don't reproject well because of frequent occlusions/disocclusions
+                    // by other objects. At this point they are already fully rendered, unlike other transparencies,
+                    // no need to reproject them and the game doesn't have a lot more particles/transparencies
+                    return tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
+                }
+
+                // At the moment just doing a "dumb" reprojection without any kind of disocclusion
+                // checks or neighborhood clipping and didn't notice any issues, will adjust as needed
+                // using motion and the current frame (lacking reflections and transparencies)
+                return tex2Dlod(lastFrameColor, float4(uv, 0.0, 0.0));
+            }
+
+            ENDCG
+        }
     }
 }

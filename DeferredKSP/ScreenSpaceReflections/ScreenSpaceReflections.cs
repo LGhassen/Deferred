@@ -34,6 +34,7 @@ namespace Deferred
         {
             public const int Compose = 0;
             public const int TraceRays = 1;
+            public const int ReprojectGbufferShading = 2;
         }
 
         public static class BlurShaderPassName
@@ -128,7 +129,7 @@ namespace Deferred
 
             GenerateHiZ(hizMipCount, commandBuffer);
 
-            BlurInputScreenTexture(commandBuffer, isVRRightEye);
+            ReprojectAndBlurScreenTexture(commandBuffer, isVRRightEye);
 
             RenderTargetIdentifier[] ssrTargets = { new RenderTargetIdentifier(ssrColor[true, false, 0]),
                                                     new RenderTargetIdentifier(ssrHitDistance[true, false, 0]) };
@@ -153,7 +154,7 @@ namespace Deferred
         private CommandBuffer CreateScreenCopyCommandBuffer(bool isVRRightEye)
         {
             var cb = new CommandBuffer();
-            cb.Blit(BuiltinRenderTextureType.CameraTarget, screenColor[true, isVRRightEye, 0]);
+            cb.Blit(BuiltinRenderTextureType.CameraTarget, screenColor[false, isVRRightEye, 0]);
 
             return cb;
         }
@@ -247,8 +248,14 @@ namespace Deferred
                                               true, FilterMode.Bilinear, 0, 4);
         }
 
-        void BlurInputScreenTexture(CommandBuffer cb, bool isVRRightEye)
+        void ReprojectAndBlurScreenTexture(CommandBuffer cb, bool isVRRightEye)
         {
+            // Reproject last frame's shading to be able to reflect reflections+transparencies
+            cb.SetGlobalTexture("lastFrameColor", screenColor[false, isVRRightEye, 0]);
+            cb.SetGlobalTexture("currentFrameColor", BuiltinRenderTextureType.CameraTarget);
+            cb.SetRenderTarget(screenColor[true, isVRRightEye, 0], 0);
+            cb.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.ReprojectGbufferShading);
+
             // TODO: Use compute shader to get rid of flip flopping
             Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
             cb.SetGlobalInt("mipLevelToRead", 0);
