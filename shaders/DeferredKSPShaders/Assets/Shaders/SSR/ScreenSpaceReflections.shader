@@ -191,14 +191,15 @@
             {
                 // Could simplify these and get the camera Pos directly
                 float3 cameraSpacePos = mul(UNITY_MATRIX_V, float4(worldPos, 1.0));
-                float3 cameraSpacePos2 = mul(UNITY_MATRIX_V, float4(worldPos + worldReflectionVector * 0.01, 1.0));
+                float3 cameraSpacePos2 = mul(UNITY_MATRIX_V, float4(worldPos + worldReflectionVector * 10.0, 1.0));
 
+                
                 textureSpacePos = mul(textureSpaceProjectionMatrix, float4(cameraSpacePos, 1.0));
                 textureSpacePos /= textureSpacePos.w;
 
                 float4 textureSpacePos2 = mul(textureSpaceProjectionMatrix, float4(cameraSpacePos2, 1.0));
                 textureSpacePos2 /= textureSpacePos2.w;
-
+                
                 textureSpaceReflectionDirection = normalize(textureSpacePos2 - textureSpacePos);
             }
 
