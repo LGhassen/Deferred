@@ -84,13 +84,15 @@ namespace Deferred
                     firstLocalCamera.gameObject.AddComponent<RefreshLegacyAmbient>();
                 }
 
-                // if SSR etc
+                // TODO: look into OpenGL support or disable it entirely
+                if (settings.useScreenSpaceReflections)
+                { 
+                    var screenSpaceReflections = firstLocalCamera.GetComponent<ScreenSpaceReflections>();
 
-                var screenSpaceReflections = firstLocalCamera.GetComponent<ScreenSpaceReflections>();
-
-                if (screenSpaceReflections == null)
-                {
-                    firstLocalCamera.gameObject.AddComponent<ScreenSpaceReflections>();
+                    if (screenSpaceReflections == null)
+                    {
+                        firstLocalCamera.gameObject.AddComponent<ScreenSpaceReflections>().Init(settings.useHalfResolutionScreenSpaceReflections);
+                    }
                 }
             }
 

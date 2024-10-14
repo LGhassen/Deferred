@@ -22,7 +22,7 @@ namespace Deferred
 
         Mesh quadMesh;
 
-        public bool useHalfResolutionTracing = true;
+        bool useHalfResolutionTracing = true;
 
         bool useComputeForHiZ = true;
         bool isRunningOpenGL = false;
@@ -51,6 +51,12 @@ namespace Deferred
 
         // This will be done after TAA, they use the same event but TAA's CB is added earlier in OnPreCull
         public const CameraEvent ScreenCopyCameraEvent = CameraEvent.AfterForwardAlpha;
+
+
+        public void Init(bool useHalfResolutionTracing)
+        {
+            this.useHalfResolutionTracing = useHalfResolutionTracing;
+        }
 
         private void Start()
         {

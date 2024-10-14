@@ -6,10 +6,15 @@ namespace Deferred
     {
         [Persistent] public float ambientBrightness = 0.9f;
         [Persistent] public float ambientTint = 0.7f;
+        
         [Persistent] public bool useSmaaInEditors = true;
         [Persistent] public bool useDitheredTransparency = false;
+        
         [Persistent] public KeyCode guiModifierKey;
         [Persistent] public KeyCode guiKey;
+
+        [Persistent] public bool useScreenSpaceReflections = true;
+        [Persistent] public bool useHalfResolutionScreenSpaceReflections = true;
 
         public static Settings LoadSettings()
         {
