@@ -174,6 +174,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
         
         float3 normal = normalize(tex2Dlod(_CameraGBufferTexture2, float4(sampleFullResUV, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx);
 
+        /*
         float normalTolerance = 0.0025;
         
         // These are the same formulas used in the "à trous" filter paper for edge-stopping
@@ -182,6 +183,13 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
         float normalDistanceSquared = max(dot(normalDifference, normalDifference), 0.0);
         float normalWeight = min(exp(-(normalDistanceSquared) / normalTolerance), 1.0);
         
+        float weight = kernel[k] * normalWeight;
+        */
+        
+        float dotProduct = dot(normal, currentNormal);
+        
+        float normalWeight = saturate(dotProduct - 0.9975) / 0.0025;
+
         float weight = kernel[k] * normalWeight;
         
 
