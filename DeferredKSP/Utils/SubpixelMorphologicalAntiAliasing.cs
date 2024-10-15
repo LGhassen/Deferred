@@ -78,6 +78,7 @@ namespace Deferred
             quality = Quality.High;
 
             SMAACommandBuffer = new CommandBuffer();
+            SMAACommandBuffer.name = "Deferred editor SMAA CommandBuffer";
         }
 
         static readonly int MainTextureProperty = Shader.PropertyToID("_MainTexture");

@@ -151,7 +151,7 @@ namespace Deferred
         private CommandBuffer CreateSSRCommandBuffer(int screenMipCount, int hizMipCount, bool isVRRightEye, int cameraWidth, int cameraHeight, bool halfResolutionTracing)
         {
             CommandBuffer commandBuffer = new CommandBuffer();
-            commandBuffer.name = "Deferred screenspace reflections";
+            commandBuffer.name = "Deferred ScreenSpace Reflections CommandBuffer";
 
             GenerateHiZ(hizMipCount, commandBuffer, cameraWidth, cameraHeight);
 
@@ -178,6 +178,7 @@ namespace Deferred
         private CommandBuffer CreateScreenCopyCommandBuffer(bool isVRRightEye)
         {
             var cb = new CommandBuffer();
+            cb.name = "Deferred SSR History ScreenCopy CommandBuffer";
             cb.Blit(BuiltinRenderTextureType.CameraTarget, screenColor[false, isVRRightEye, 0]);
 
             return cb;

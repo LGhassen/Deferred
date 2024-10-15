@@ -27,7 +27,10 @@ namespace Deferred
             targetCamera = GetComponent<Camera>();
 
             backgroundCopyCommandBuffer = new CommandBuffer();
+            backgroundCopyCommandBuffer.name = "Deferred PQS fade background copy CommandBuffer";
+
             applyFadeCommandBuffer = new CommandBuffer();
+            applyFadeCommandBuffer.name = "Deferred PQS fade apply CommandBuffer";
 
             applyFadeMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/ApplyPQSFade"]);
         }

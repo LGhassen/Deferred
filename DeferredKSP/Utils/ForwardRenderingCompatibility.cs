@@ -66,6 +66,7 @@ namespace Deferred
         {
             targetCamera = GetComponent<Camera>();
             commandBuffer = new CommandBuffer();
+            commandBuffer.name = "Deferred apply main light properties CommandBuffer";
 
             var lights = (Light[])FindObjectsOfType(typeof(Light));
             targetLight = lights.Where(x => x.name == "SunLight").FirstOrDefault();

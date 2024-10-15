@@ -34,8 +34,13 @@ namespace Deferred
             targetCamera = GetComponent<Camera>();
 
             emissionCopyCommandBuffer = new CommandBuffer();
+            emissionCopyCommandBuffer.name = "Deferred debug emission copy CommandBuffer";
+
             gbufferCopyCommandBuffer = new CommandBuffer();
+            gbufferCopyCommandBuffer.name = "Deferred debug gbuffer copy CommandBuffer";
+
             gbufferDisplayCommandBuffer = new CommandBuffer();
+            gbufferDisplayCommandBuffer.name = "Deferred debug display CommandBuffer";
 
             copyGBufferMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/CopyGBuffer"]);
             displayGBufferMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/DisplayGBuffer"]);
