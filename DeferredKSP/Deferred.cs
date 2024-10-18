@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.2.6")]
+[assembly: AssemblyVersion("1.3.0")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
@@ -25,6 +25,7 @@ namespace Deferred
 
             HandleStockProbe();
 
+            // TODO: maybe remove this? Might affect any forward cameras
             QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
 
             GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);

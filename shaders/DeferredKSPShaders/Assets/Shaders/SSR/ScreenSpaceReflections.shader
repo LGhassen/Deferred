@@ -40,6 +40,9 @@
             sampler2D _CameraGBufferTexture1; // alpha = smoothness
             sampler2D _CameraGBufferTexture2; // normal = rgb
 
+            sampler2D oceanGbufferDepth;
+            sampler2D oceanGbufferFresnel;
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -122,8 +125,24 @@
                 }
                 */
 
+                // read the ocean depth and fresnel and decide if we use the ocean or not for tracing
+                /*
+                float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
+                float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
+                
+                bool ssrUsedOcean = false;
+
+                // read the ocean stuff and decide if we use the ocean or not for tracing
+                if (oceanZDepth > 0.0 && oceanFresnel > 0.01) //TODO: if reversed_z
+                {
+                    ssrUsedOcean = true;
+                }
+                */
+
+                bool ssrUsedOcean = false;
+
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
-                ind.specular = lerp(ind.specular, ssr.rgb, ssr.a);
+                ind.specular = lerp(ind.specular, ssr.rgb, ssr.a * !ssrUsedOcean);
 
                 half3 rgb = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind).rgb;
 
@@ -158,6 +177,12 @@
             SamplerState sampler_SSRScreenColor;
 
             float4x4 textureSpaceProjectionMatrix;
+
+            sampler2D oceanGbufferDepth;
+            sampler2D oceanGbufferNormalsAndSigma;
+            sampler2D oceanGbufferFresnel;
+
+            float2 _VarianceMax;
 
             struct appdata
             {
@@ -214,7 +239,9 @@
 
                 // Smoothly fade out to reflection probe at low smoothness
                  // TODO: Need to put a define for the min smoothness value, preferably in .cginc to share for all shaders
-                confidence = lerp(0.0, confidence, saturate((smoothness - 0.4) / 0.1));
+                //confidence = lerp(0.0, confidence, saturate((smoothness - 0.4) / 0.1));
+
+                confidence = confidence * saturate((smoothness - 0.6) / 0.2);
 
                 return confidence;
             }
@@ -229,6 +256,39 @@
 
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
                 float smoothness = tex2Dlod(_CameraGBufferTexture1, i.uv).a;
+                /*
+                float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
+                float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
+
+                float4 oceanNormalsAndSigma = tex2Dlod(oceanGbufferNormalsAndSigma, i.uv);
+
+                float3 oceanWorldNormals = 0.0;
+
+                // Unpack world normals from the gbuffer
+                oceanWorldNormals.xy = oceanNormalsAndSigma.xy * 2.0 - 1.0.xx;
+
+                // Reconstruct the z component of the world normals
+                oceanWorldNormals.z = sqrt(1.0 - saturate(dot(oceanWorldNormals.xy, oceanWorldNormals.xy)));
+    
+                // Use the sign which we stored in the 2-bit alpha
+                oceanWorldNormals.z = oceanNormalsAndSigma.w > 0.0 ? oceanWorldNormals.z : -oceanWorldNormals.z;
+
+                //float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
+
+                //float oceanSmoothness = sqrt(oceanSigmaSq) * 4.5 / 6.0;
+                // the above didn't really work lel, might have been lower than 0.4
+                float oceanSmoothness = 0.95;
+
+                bool useOcean = false;
+
+                // read the ocean stuff and decide if we use the ocean or not for tracing
+                if (oceanZDepth > 0.0 && oceanFresnel > 0.01) //TODO: if reversed_z
+                {
+                    useOcean = true;
+                    zdepth = oceanZDepth;
+                    smoothness = oceanSmoothness;
+                }
+                */
 
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0 || smoothness < 0.4)
@@ -242,8 +302,28 @@
                 }
 
                 float3 worldNormal = tex2Dlod(_CameraGBufferTexture2, i.uv).rgb * 2.0 - 1.0.xxx;
+
+
+
                 float3 worldPos = getPreciseWorldPosFromDepth(i.uv.xy, zdepth);
                 float3 viewVector = normalize(worldPos - _WorldSpaceCameraPos);
+
+
+                
+                //if (useOcean)
+                {
+                    /*
+                    if (dot(-viewVector, oceanWorldNormals) < 0.0) // idk if this will work but we have an issue with black texels (pointing down I guess)
+                                                                   // could also put back the sky reproject to fix it?
+                                                                   // indeed doesn't seem to work, will need the upVector
+                    {
+					    oceanWorldNormals = reflect(oceanWorldNormals, -viewVector);
+				    }
+                    */
+
+                    //worldNormal = oceanWorldNormals;
+                }
+
                 float3 reflectionVector = reflect(viewVector, worldNormal);
 
                 float4 textureSpacePos;
@@ -344,6 +424,7 @@
                 
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
 
+                
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0)
 #else
@@ -355,6 +436,7 @@
                     // no need to reproject them and the game doesn't have a lot more particles/transparencies
                     return tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
                 }
+                
 
                 // At the moment just doing a "dumb" reprojection without any kind of disocclusion
                 // checks or neighborhood clipping and didn't notice any issues, will adjust as needed

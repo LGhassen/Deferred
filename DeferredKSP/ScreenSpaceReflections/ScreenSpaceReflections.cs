@@ -415,7 +415,7 @@ namespace Deferred
         {
             Shader.SetGlobalInt(useSSROnCurrentCamera, 1);
 
-            if (useHDR != targetCamera.allowHDR || supportVR != VREnabled())
+            if (useHDR != targetCamera.allowHDR || supportVR != VREnabled()) // also need to detect width/height changes here
             {
                 RecreateTexturesAndBuffers(1, false);
             }

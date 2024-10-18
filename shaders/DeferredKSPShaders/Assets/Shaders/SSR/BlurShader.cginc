@@ -56,6 +56,11 @@ sampler2D ssrHitDistance;
 #include "HiZtracing.cginc"
 #include "ConeUtils.cginc"
 
+sampler2D oceanGbufferDepth;
+sampler2D oceanGbufferNormalsAndSigma;
+sampler2D oceanGbufferFresnel;
+float2 _VarianceMax;
+
 float4 normalsAwareBlurFrag(v2f i) : SV_Target
 {
     float2 halfResUV = i.uv.xy;
@@ -72,6 +77,40 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
     float zdepth = tex2Dlod(_CameraDepthTexture, float4(fullResUV, 0.0, 0.0));
     float4 centerColor = tex2Dlod(deferredSSRColorBuffer, float4(halfResUV, 0.0, 0));
 
+    /*
+    float oceanZDepth = tex2Dlod(oceanGbufferDepth, float4(fullResUV, 0.0, 0.0));
+    float oceanFresnel = tex2Dlod(oceanGbufferFresnel, float4(fullResUV, 0.0, 0.0));
+
+    float4 oceanNormalsAndSigma = tex2Dlod(oceanGbufferNormalsAndSigma, float4(fullResUV, 0.0, 0.0));
+
+    float3 oceanWorldNormals = 0.0;
+
+    // Unpack world normals from the gbuffer
+    oceanWorldNormals.xy = oceanNormalsAndSigma.xy * 2.0 - 1.0.xx;
+
+    // Reconstruct the z component of the world normals
+    oceanWorldNormals.z = sqrt(1.0 - saturate(dot(oceanWorldNormals.xy, oceanWorldNormals.xy)));
+    
+    // Use the sign which we stored in the 2-bit alpha
+    oceanWorldNormals.z = oceanNormalsAndSigma.w > 0.0 ? oceanWorldNormals.z : -oceanWorldNormals.z;
+
+    //float oceanSmoothness = 0.85;
+    //float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
+    //float oceanSmoothness = sqrt(oceanSigmaSq) * 4.5 / 6.0;
+    
+    float oceanSmoothness = 0.95;
+    
+    bool useOcean = false;
+    
+
+    // read the ocean stuff and decide if we use the ocean or not for tracing
+    if (oceanZDepth > 0.0 && oceanFresnel > 0.01) //TODO: if reversed_z
+    {
+        useOcean = true;
+        zdepth = oceanZDepth;
+    }
+    */
+    
 #if defined(UNITY_REVERSED_Z)
     if (zdepth == 0.0)
 #else
@@ -81,10 +120,16 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
 
     
     float smoothness = tex2Dlod(_CameraGBufferTexture1, float4(fullResUV, 0.0, 0.0)).a;
-
+    /*
+    if (useOcean)
+    {
+        smoothness = oceanSmoothness;
+    }
+    */
     [branch]
     if (smoothness > 0.96 || smoothness < 0.4) // Disable on perfect mirror surfaces, and every rough surfaces don't have SSR
     {
+
         return centerColor;
     }
 
@@ -118,7 +163,13 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
     
     // Renormalize because 10-bit texture will mess up dot products
     float3 currentNormal = normalize(tex2Dlod(_CameraGBufferTexture2, float4(fullResUV, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx);
- 
+ /*
+    if (useOcean)
+    {
+        currentNormal = oceanWorldNormals;
+    }
+    */
+    
     float hitDistance = tex2Dlod(ssrHitDistance, float4(halfResUV, 0.0, 3.0));
     
     float sizeInPixels;
@@ -174,6 +225,33 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
         
         float3 normal = normalize(tex2Dlod(_CameraGBufferTexture2, float4(sampleFullResUV, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx);
 
+        /*
+        float sampleOceanZDepth = tex2Dlod(oceanGbufferDepth, float4(sampleFullResUV, 0.0, 0.0));
+        float sampleOceanFresnel = tex2Dlod(oceanGbufferFresnel, float4(sampleFullResUV, 0.0, 0.0));
+
+        float4 sampleOceanNormalsAndSigma = tex2Dlod(oceanGbufferNormalsAndSigma, float4(sampleFullResUV, 0.0, 0.0));
+
+        float3 sampleOceanWorldNormals = 0.0;
+
+        // Unpack world normals from the gbuffer
+        sampleOceanWorldNormals.xy = oceanNormalsAndSigma.xy * 2.0 - 1.0.xx;
+
+        // Reconstruct the z component of the world normals
+        sampleOceanWorldNormals.z = sqrt(1.0 - saturate(dot(sampleOceanWorldNormals.xy, sampleOceanWorldNormals.xy)));
+    
+        // Use the sign which we stored in the 2-bit alpha
+        sampleOceanWorldNormals.z = sampleOceanNormalsAndSigma.w > 0.0 ? sampleOceanWorldNormals.z : -sampleOceanWorldNormals.z;
+
+        bool sampleUseOcean = false;
+
+        // read the ocean stuff and decide if we use the ocean or not for tracing
+        if (sampleOceanZDepth > 0.0 && sampleOceanFresnel > 0.01) //TODO: if reversed_z
+        {
+            sampleUseOcean = true;
+            normal = sampleOceanWorldNormals;
+        }
+        */
+        
         /*
         float normalTolerance = 0.0025;
         
