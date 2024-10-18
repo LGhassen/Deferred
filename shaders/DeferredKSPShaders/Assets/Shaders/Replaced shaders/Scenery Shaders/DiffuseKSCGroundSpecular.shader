@@ -67,6 +67,8 @@ Shader "KSP/Scenery/Diffuse Ground KSC Specular"
 
         void surf(Input i, inout SurfaceOutputStandard o)
         {
+            _TarmacColor = min(_TarmacColor, float4(0.89.xxx, 1.0)); // hack to equalize mismatching color settings in the KSC
+
             float4 groundColor = tex2D(_TarmacTexture, i.uv_TarmacTexture);
             float3 groundNormal = UnpackNormalDXT5nm(tex2D(_TarmacNormal, i.uv_TarmacTexture));
             float blendMask = tex2D(_BlendMaskTexture,(i.uv2_BlendMaskTexture));
