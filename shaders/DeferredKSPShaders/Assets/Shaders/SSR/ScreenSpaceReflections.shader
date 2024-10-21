@@ -126,7 +126,7 @@
                 */
 
                 // read the ocean depth and fresnel and decide if we use the ocean or not for tracing
-                /*
+                
                 float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
                 float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
                 
@@ -137,9 +137,9 @@
                 {
                     ssrUsedOcean = true;
                 }
-                */
+                
 
-                bool ssrUsedOcean = false;
+                //bool ssrUsedOcean = false;
 
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
                 ind.specular = lerp(ind.specular, ssr.rgb, ssr.a * !ssrUsedOcean);
@@ -183,6 +183,8 @@
             sampler2D oceanGbufferFresnel;
 
             float2 _VarianceMax;
+
+            float3 SSRPlanetPosition;
 
             struct appdata
             {
@@ -246,6 +248,51 @@
                 return confidence;
             }
 
+            
+            
+            // TODO: rewrite code to be a bit different and link to scatterer source
+
+            #define MAX_POSITION_FROM_DEPTH_BINARY_SEARCH_ITERATIONS 15
+            #define POSITION_FROM_DEPTH_BINARY_SEARCH_FLOAT_EPSILON 1e-11
+
+            float3 GetAccurateFragmentPosition(float2 uv, float zdepth)
+            {
+                float3 inaccuratePosition = getPreciseWorldPosFromDepth(uv, zdepth);
+
+                float3 worldViewDir = inaccuratePosition - _WorldSpaceCameraPos;
+                float inaccurateDistance = length(worldViewDir);
+                worldViewDir /= inaccurateDistance;
+
+                int iteration = 0;
+
+                float maxSearchDistance = inaccurateDistance * 2.0;
+                float minSearchDistance = 0.0;
+
+                float mid = 0; float depth = -10.0;
+
+                while ((iteration < MAX_POSITION_FROM_DEPTH_BINARY_SEARCH_ITERATIONS) && (abs(depth - zdepth) > POSITION_FROM_DEPTH_BINARY_SEARCH_FLOAT_EPSILON))
+                {
+                    mid = 0.5 * (maxSearchDistance + minSearchDistance);
+
+                    float3 worldPos = _WorldSpaceCameraPos + worldViewDir * mid;
+
+                    float4 clipPos = mul(UNITY_MATRIX_VP, float4(worldPos, 1.0));
+                    depth = clipPos.z / clipPos.w;
+
+            #if defined(UNITY_REVERSED_Z)
+                    maxSearchDistance = (depth < zdepth) ? mid : maxSearchDistance;
+                    minSearchDistance = (depth > zdepth) ? mid : minSearchDistance;
+            #else
+                    maxSearchDistance = (depth > zdepth) ? mid : maxSearchDistance;
+                    minSearchDistance = (depth < zdepth) ? mid : minSearchDistance;
+            #endif
+
+                    iteration++;
+                }
+
+                return _WorldSpaceCameraPos + worldViewDir * mid;
+            }
+
             fout frag (v2f i)
             {
                 i.uv /= i.uv.w;
@@ -256,7 +303,7 @@
 
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
                 float smoothness = tex2Dlod(_CameraGBufferTexture1, i.uv).a;
-                /*
+                
                 float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
                 float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
 
@@ -273,11 +320,22 @@
                 // Use the sign which we stored in the 2-bit alpha
                 oceanWorldNormals.z = oceanNormalsAndSigma.w > 0.0 ? oceanWorldNormals.z : -oceanWorldNormals.z;
 
-                //float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
+                float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
 
                 //float oceanSmoothness = sqrt(oceanSigmaSq) * 4.5 / 6.0;
                 // the above didn't really work lel, might have been lower than 0.4
-                float oceanSmoothness = 0.95;
+                //float oceanSmoothness = 0.95;
+
+                //float oceanSmoothness = 1.0 - saturate(tan(sqrt(oceanSigmaSq)));
+
+                //float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 4.5 / 6.0));  // looks good tbh
+                float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 3.0 / 6.0));
+                //float oceanSmoothness = 1.0 - saturate(sqrt(0.7 * oceanSigmaSq));
+
+                //float oceanSmoothness = 1.0 - saturate(sqrt(0.5 * oceanSigmaSq));
+                //float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 0.1));
+
+                //float oceanSmoothness = 0.95;
 
                 bool useOcean = false;
 
@@ -288,7 +346,7 @@
                     zdepth = oceanZDepth;
                     smoothness = oceanSmoothness;
                 }
-                */
+                
 
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0 || smoothness < 0.4)
@@ -305,26 +363,36 @@
 
 
 
-                float3 worldPos = getPreciseWorldPosFromDepth(i.uv.xy, zdepth);
+                //float3 worldPos = getPreciseWorldPosFromDepth(i.uv.xy, zdepth);
+
+                float3 worldPos = GetAccurateFragmentPosition(i.uv.xy, zdepth);
+
                 float3 viewVector = normalize(worldPos - _WorldSpaceCameraPos);
 
 
                 
-                //if (useOcean)
+                if (useOcean)
                 {
-                    /*
-                    if (dot(-viewVector, oceanWorldNormals) < 0.0) // idk if this will work but we have an issue with black texels (pointing down I guess)
-                                                                   // could also put back the sky reproject to fix it?
-                                                                   // indeed doesn't seem to work, will need the upVector
-                    {
-					    oceanWorldNormals = reflect(oceanWorldNormals, -viewVector);
-				    }
-                    */
-
-                    //worldNormal = oceanWorldNormals;
+                    worldNormal = oceanWorldNormals;
                 }
 
                 float3 reflectionVector = reflect(viewVector, worldNormal);
+
+                // Stop ocean reflection vectors from going undrwater
+                if (useOcean)
+                {
+                    // get normal at reflection position, we need the current planet position
+                    float3 planetNormalAtPosition = normalize(worldPos - SSRPlanetPosition);
+
+                    // if the component along the normal invert it
+                    float zComponent = dot(reflectionVector, planetNormalAtPosition);
+
+                    if (zComponent < 0.0)
+                    {
+                        reflectionVector -= 2 * zComponent * planetNormalAtPosition;
+                        reflectionVector = normalize(reflectionVector);
+                    }
+                }
 
                 float4 textureSpacePos;
                 float3 textureSpaceReflectionDirection;
@@ -424,7 +492,7 @@
                 
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
 
-                
+                /*
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0)
 #else
@@ -436,7 +504,7 @@
                     // no need to reproject them and the game doesn't have a lot more particles/transparencies
                     return tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
                 }
-                
+                */
 
                 // At the moment just doing a "dumb" reprojection without any kind of disocclusion
                 // checks or neighborhood clipping and didn't notice any issues, will adjust as needed

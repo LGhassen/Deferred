@@ -186,6 +186,7 @@ namespace Deferred
 
         private void PerformNormalsAwareSSRBlur(CommandBuffer cb, int cameraWidth, int cameraHeight, bool halfResolutionTracing)
         {
+            
             float maxScreenSizeToCover = 0.05f;
             float pixelSizeToCover = maxScreenSizeToCover * Mathf.Max(cameraWidth, cameraHeight);
 
@@ -225,6 +226,9 @@ namespace Deferred
             }
 
             cb.SetGlobalTexture("ssrOutput", currentTarget);  // TODO: rename property
+            
+
+            //cb.SetGlobalTexture("ssrOutput", ssrColor[true, false, 0]);  // TODO: rename property
         }
 
         // This will fuzzy out the edges of objects reflected in rough surfaces, making it look closer to the importance-sampled reference
@@ -419,7 +423,12 @@ namespace Deferred
             {
                 RecreateTexturesAndBuffers(1, false);
             }
+
+            if (FlightGlobals.currentMainBody != null)
+                Shader.SetGlobalVector("SSRPlanetPosition", FlightGlobals.currentMainBody.transform.position);
             
+
+
             // At the moment SSR doesn't work correctly in screenshots, the hit distances are wrong and there
             // are gaps in the intersections, maybe some issue with the projection matrix
             // I also disabled screenshot supersizing for now because the reprojected history is low-res
@@ -464,8 +473,10 @@ namespace Deferred
 
                 if (supportVR)
                     cameraProjectionMatrix = targetCamera.GetStereoProjectionMatrix(isVRRightEye ? Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left);
+                    //cameraProjectionMatrix = targetCamera.GetStereoNonJitteredProjectionMatrix(isVRRightEye ? Camera.StereoscopicEye.Right : Camera.StereoscopicEye.Left);
                 else
                     cameraProjectionMatrix = targetCamera.projectionMatrix;
+                    //cameraProjectionMatrix = targetCamera.nonJitteredProjectionMatrix;
 
                 Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cameraProjectionMatrix, false);
                 textureSpaceProjectionMatrix *= projectionMatrix;
