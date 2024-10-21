@@ -23,7 +23,7 @@ Shader "KSP/Bumped Specular (Cutoff)"
 
     SubShader 
     {
-        Tags { "Queue" = "AlphaTest" "RenderType" = "TransparentCutout" }
+        Tags { "Queue" = "AlphaTest" "RenderType"="Opaque" }
 
         Stencil
         {
@@ -39,7 +39,7 @@ Shader "KSP/Bumped Specular (Cutoff)"
         #define IGNORE_VERTEX_COLOR_ON
         #define DISSOLVE_FADE_ON
 
-        #include "../ReplacementShader.cginc" //exclude_path:forward
+        #include "../ReplacementShader.cginc"
 		#pragma surface DeferredSpecularReplacementShader StandardSpecular 
         #pragma target 3.0
 

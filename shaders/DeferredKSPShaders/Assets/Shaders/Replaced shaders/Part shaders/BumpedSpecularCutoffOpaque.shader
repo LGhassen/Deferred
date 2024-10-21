@@ -19,7 +19,7 @@ Shader "KSP/Bumped Specular Opaque (Cutoff)"
     }
     SubShader 
     {
-        Tags { "Queue" = "AlphaTest" "RenderType" = "TransparentCutout" }
+        Tags { "Queue" = "AlphaTest" "RenderType"="Opaque" }
 
         Stencil
         {
