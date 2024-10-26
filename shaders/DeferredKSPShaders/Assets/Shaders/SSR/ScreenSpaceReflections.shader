@@ -142,6 +142,9 @@
                 //bool ssrUsedOcean = false;
 
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
+
+                ssr.a = ssr.a * saturate((smoothness - 0.4) / 0.2); // Smoothly fade out SSR when approaching the cutoff roughness
+
                 ind.specular = lerp(ind.specular, ssr.rgb, ssr.a * !ssrUsedOcean);
 
                 half3 rgb = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind).rgb;
@@ -238,12 +241,6 @@
                 
                 // Prevent self-intersections
                 confidence = pixelsTraveled.x < 1 && pixelsTraveled.y < 1 ? 0.0 : confidence;
-
-                // Smoothly fade out to reflection probe at low smoothness
-                 // TODO: Need to put a define for the min smoothness value, preferably in .cginc to share for all shaders
-                //confidence = lerp(0.0, confidence, saturate((smoothness - 0.4) / 0.1));
-
-                confidence = confidence * saturate((smoothness - 0.6) / 0.2);
 
                 return confidence;
             }

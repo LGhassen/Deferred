@@ -142,9 +142,8 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
     }
     
     [branch]
-    if (smoothness > 0.96 || smoothness < 0.4) // Disable on perfect mirror surfaces, and every rough surfaces don't have SSR
+    if (smoothness > 0.96 || smoothness < 0.4) // Disable on perfect mirror surfaces, and very rough surfaces don't have SSR
     {
-
         return centerColor;
     }
 
