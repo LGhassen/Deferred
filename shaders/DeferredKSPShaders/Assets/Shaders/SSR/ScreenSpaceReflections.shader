@@ -25,6 +25,7 @@
             #pragma fragment frag
 
             #pragma multi_compile ___ HALF_RESOLUTION_TRACING
+            #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
 
             sampler2D ssrOutput;
 
@@ -41,7 +42,6 @@
             sampler2D _CameraGBufferTexture2; // normal = rgb
 
             sampler2D oceanGbufferDepth;
-            sampler2D oceanGbufferFresnel;
 
             struct appdata
             {
@@ -114,38 +114,28 @@
 
                 ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
-                //float bayerDither = BayerDither4x4(i.uv.xy);
-                //ind.specular = SpecularBrdfApprox(worldPos, worldNormal, _WorldSpaceCameraPos, 1.0 - smoothness, bayerDither); // this appears to be distorted, idk thought it worked correctly
-                //ind.specular = FakeSpecularBrdfApprox(worldPos, eyeVec, worldNormal, 1.0 - data.smoothness, bayerDither);
+#if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+                float4 ssr = 0.0.xxxx;
 
-                /*
-                if (i.uv.x > 0.5)
-                {
-                    ind.specular = ImportanceSampledReflectionProbeSpecular(eyeVec, worldNormal, data, 1024);
-                }
-                */
-
-                // read the ocean depth and fresnel and decide if we use the ocean or not for tracing
-                
+                // Read the ocean depth and decide if we use the ocean or not for tracing
                 float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
-                float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
                 
-                bool ssrUsedOcean = false;
-
-                // read the ocean stuff and decide if we use the ocean or not for tracing
-                if (oceanZDepth > 0.0 && oceanFresnel > 0.01) //TODO: if reversed_z
+                [branch]
+    #if defined(UNITY_REVERSED_Z)
+                if (oceanZDepth == 0.0)
+    #else 
+                if (oceanZDepth == 1.0)
                 {
-                    ssrUsedOcean = true;
+                    ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
                 }
-                
-
-                //bool ssrUsedOcean = false;
-
+    #endif      
+#else
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
+#endif
 
                 ssr.a = ssr.a * saturate((smoothness - 0.4) / 0.2); // Smoothly fade out SSR when approaching the cutoff roughness
 
-                ind.specular = lerp(ind.specular, ssr.rgb, ssr.a * !ssrUsedOcean);
+                ind.specular = lerp(ind.specular, ssr.rgb, ssr.a);
 
                 half3 rgb = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind).rgb;
 
@@ -164,6 +154,7 @@
             #pragma fragment frag
 
             #pragma multi_compile ___ HALF_RESOLUTION_TRACING
+            #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
             #define REFLECT_SKY
 
             sampler2D _CameraDepthTexture;
@@ -181,11 +172,9 @@
 
             float4x4 textureSpaceProjectionMatrix;
 
-            sampler2D oceanGbufferDepth;
-            sampler2D oceanGbufferNormalsAndSigma;
-            sampler2D oceanGbufferFresnel;
-
-            float2 _VarianceMax;
+            sampler2D combinedGBufferAndOceanNormalsAndSmoothness;
+            sampler2D ScattererDepthCopy;
+            sampler2D oceanMask;
 
             float3 SSRPlanetPosition;
 
@@ -245,8 +234,7 @@
                 return confidence;
             }
 
-            
-            
+
             // TODO: rewrite code to be a bit different and link to scatterer source
 
             #define MAX_POSITION_FROM_DEPTH_BINARY_SEARCH_ITERATIONS 15
@@ -294,56 +282,20 @@
             {
                 i.uv /= i.uv.w;
 
+                float4 halfResUV = i.uv;
+
 #if defined(HALF_RESOLUTION_TRACING)
                 i.uv.xy = GetFullResUVFromHalfResUV(i.uv.xy);
 #endif
 
+#if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+                float zdepth = tex2Dlod(ScattererDepthCopy, i.uv);
+                float4 combinedNormalsAndSmoothness = tex2Dlod(combinedGBufferAndOceanNormalsAndSmoothness, halfResUV);
+                float smoothness = combinedNormalsAndSmoothness.z;
+#else
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
                 float smoothness = tex2Dlod(_CameraGBufferTexture1, i.uv).a;
-                
-                float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
-                float oceanFresnel = tex2Dlod(oceanGbufferFresnel, i.uv);
-
-                float4 oceanNormalsAndSigma = tex2Dlod(oceanGbufferNormalsAndSigma, i.uv);
-
-                float3 oceanWorldNormals = 0.0;
-
-                // Unpack world normals from the gbuffer
-                oceanWorldNormals.xy = oceanNormalsAndSigma.xy * 2.0 - 1.0.xx;
-
-                // Reconstruct the z component of the world normals
-                oceanWorldNormals.z = sqrt(1.0 - saturate(dot(oceanWorldNormals.xy, oceanWorldNormals.xy)));
-    
-                // Use the sign which we stored in the 2-bit alpha
-                oceanWorldNormals.z = oceanNormalsAndSigma.w > 0.0 ? oceanWorldNormals.z : -oceanWorldNormals.z;
-
-                float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
-
-                //float oceanSmoothness = sqrt(oceanSigmaSq) * 4.5 / 6.0;
-                // the above didn't really work lel, might have been lower than 0.4
-                //float oceanSmoothness = 0.95;
-
-                //float oceanSmoothness = 1.0 - saturate(tan(sqrt(oceanSigmaSq)));
-
-                //float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 4.5 / 6.0));  // looks good tbh
-                float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 3.0 / 6.0));
-                //float oceanSmoothness = 1.0 - saturate(sqrt(0.7 * oceanSigmaSq));
-
-                //float oceanSmoothness = 1.0 - saturate(sqrt(0.5 * oceanSigmaSq));
-                //float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 0.1));
-
-                //float oceanSmoothness = 0.95;
-
-                bool useOcean = false;
-
-                // read the ocean stuff and decide if we use the ocean or not for tracing
-                if (oceanZDepth > 0.0 && oceanFresnel > 0.01) //TODO: if reversed_z
-                {
-                    useOcean = true;
-                    zdepth = oceanZDepth;
-                    smoothness = oceanSmoothness;
-                }
-                
+#endif
 
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0 || smoothness < 0.4)
@@ -356,22 +308,21 @@
                     return output;
                 }
 
+                
+                bool useOcean = false;
+
+#if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+                useOcean = tex2Dlod(oceanMask, halfResUV).r > 0.5;                
+                float3 worldNormal = UnpackNormalCustomEncoding(combinedNormalsAndSmoothness);
+#else
                 float3 worldNormal = tex2Dlod(_CameraGBufferTexture2, i.uv).rgb * 2.0 - 1.0.xxx;
-
-
+#endif
 
                 //float3 worldPos = getPreciseWorldPosFromDepth(i.uv.xy, zdepth);
 
                 float3 worldPos = GetAccurateFragmentPosition(i.uv.xy, zdepth);
 
                 float3 viewVector = normalize(worldPos - _WorldSpaceCameraPos);
-
-
-                
-                if (useOcean)
-                {
-                    worldNormal = oceanWorldNormals;
-                }
 
                 float3 reflectionVector = reflect(viewVector, worldNormal);
 
@@ -442,20 +393,21 @@
         {
             CGPROGRAM
 
-            #pragma vertex vert
-
-            #include "UnityCG.cginc"
-
             #pragma target 3.0
+            #pragma vertex vert
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+
+            #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
 
             sampler2D _CameraMotionVectorsTexture;
             sampler2D _CameraDepthTexture;
             
             sampler2D lastFrameColor;
             sampler2D currentFrameColor;
+
+            sampler2D ScattererDepthCopy;
 
             struct appdata
             {
@@ -486,10 +438,13 @@
                 
                 float2 uv = i.uv.xy - motion;
 
-                
+#if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+                float zdepth = tex2Dlod(ScattererDepthCopy, i.uv);
+#else
                 float zdepth = tex2Dlod(_CameraDepthTexture, i.uv);
+#endif
 
-                /*
+
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0)
 #else
@@ -501,12 +456,118 @@
                     // no need to reproject them and the game doesn't have a lot more particles/transparencies
                     return tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
                 }
-                */
 
                 // At the moment just doing a "dumb" reprojection without any kind of disocclusion
                 // checks or neighborhood clipping and didn't notice any issues, will adjust as needed
                 // using motion and the current frame (lacking reflections and transparencies)
                 return tex2Dlod(lastFrameColor, float4(uv, 0.0, 0.0));
+            }
+
+            ENDCG
+        }
+
+        Pass  // Pass 3 combine gbuffer info with ocean gbuffer info
+        {
+            CGPROGRAM
+
+            
+            #pragma target 3.0
+            #pragma vertex vert
+            #pragma fragment frag
+
+            sampler2D _CameraDepthTexture;
+            sampler2D _CameraGBufferTexture1; // alpha = smoothness
+            sampler2D _CameraGBufferTexture2; // rgb = normal
+
+            sampler2D oceanGbufferDepth;
+            sampler2D oceanGbufferNormalsAndSigma;
+
+            float2 _VarianceMax; // TODO: pass this specifically not globally
+
+            #include "UnityCG.cginc"
+            #include "HiZTracing.cginc"
+            #include "ConeUtils.cginc"
+
+            #pragma multi_compile ___ HALF_RESOLUTION_TRACING
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float4 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+
+            v2f vert (appdata v)
+            {
+                v2f o;
+				o.vertex = float4(v.vertex.xy * 2.0, 0.0, 1.0);
+                o.uv = ComputeScreenPos(o.vertex);
+
+                return o;
+            }
+
+            struct fout
+			{
+                float4 normalsAndSmoothness: COLOR0;
+                float oceanMask: COLOR1;
+			};
+
+            fout frag (v2f i)
+            {
+                i.uv /= i.uv.w;
+
+#if defined(HALF_RESOLUTION_TRACING)
+                i.uv.xy = GetFullResUVFromHalfResUV(i.uv.xy);
+#endif
+
+                float oceanDepth = tex2Dlod(oceanGbufferDepth, i.uv);
+
+                float3 worldNormal;
+                float smoothness;
+                float oceanMask;
+                
+#if defined(UNITY_REVERSED_Z)
+                [branch]
+                if (oceanDepth == 0.0)
+#else
+                [branch]
+                if (oceanDepth == 1.0)
+#endif
+                {
+                    // If no ocean, use the gbuffer
+                    worldNormal = tex2Dlod(_CameraGBufferTexture2, i.uv).rgb * 2.0 - 1.0.xxx;
+                    smoothness = tex2Dlod(_CameraGBufferTexture1, i.uv).a;
+                    oceanMask = 0.0;
+                }
+                else
+                {
+                    float4 oceanNormalsAndSigma = tex2Dlod(oceanGbufferNormalsAndSigma, i.uv);
+
+                    float3 oceanWorldNormals = UnpackNormalCustomEncoding(oceanNormalsAndSigma);
+
+                    float oceanSigmaSq = oceanNormalsAndSigma.z * _VarianceMax.x;
+
+                    // Purely empirical conversion from ocean sigma to gbuffer smoothness
+                    // The ocean uses a gaussian-distribution based BRDF accurate for oceans, the GBuffer uses GGX
+                    float oceanSmoothness = 1.0 - saturate(sqrt(sqrt(oceanSigmaSq) * 3.0 / 6.0));
+
+                    worldNormal = oceanWorldNormals;
+                    smoothness = oceanSmoothness;
+                    oceanMask = 1.0;
+                }
+
+                fout result;
+
+                // Encode normals in 10-bit RG, store sign in 2-bit a for reconstruction
+                result.normalsAndSmoothness = float4(worldNormal.xy * 0.5 + 0.5.xx, smoothness, sign(worldNormal.z));
+                result.oceanMask = oceanMask;
+
+                return result;
             }
 
             ENDCG

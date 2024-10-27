@@ -267,3 +267,19 @@ float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sample
     return tex2Dlod(ssrTexture, float4(uv, 0.0, 0.0));
 #endif 
 }
+
+float3 UnpackNormalCustomEncoding(float4 normalsAndSmoothness)
+{
+    float3 normals = 0.0;
+
+    // Unpack world normals from the gbuffer
+    normals.xy = normalsAndSmoothness.xy * 2.0 - 1.0.xx;
+
+    // Reconstruct the z component of the world normals
+    normals.z = sqrt(1.0 - saturate(dot(normals.xy, normals.xy)));
+    
+    // Use the sign which we stored in the 2-bit alpha
+    normals.z = normalsAndSmoothness.w > 0.0 ? normals.z : -normals.z;
+    
+    return normals;
+}

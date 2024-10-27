@@ -45,6 +45,7 @@
             #pragma fragment normalsAwareBlurFrag
 
             #pragma multi_compile ___ HALF_RESOLUTION_TRACING
+            #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
 
             #include "UnityCG.cginc"
             #include "BlurShader.cginc"
@@ -61,6 +62,7 @@
             #pragma fragment normalsAwareBlurFrag
 
             #define HALF_RESOLUTION_TRACING
+            #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
             #define VERTICAL_BLUR
 
             #include "UnityCG.cginc"

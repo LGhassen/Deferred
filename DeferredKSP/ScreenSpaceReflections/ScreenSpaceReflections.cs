@@ -1,11 +1,43 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using System.Collections.Generic;
 using static Deferred.RenderingUtils;
 
 namespace Deferred
 {
     public class ScreenSpaceReflections : MonoBehaviour
     {
+        static Dictionary<Camera, ScreenSpaceReflections> CameraToSSR = new Dictionary<Camera, ScreenSpaceReflections>();
+
+        public static bool RegisterScattererOceanForCamera(Camera cam, out bool halfResolution)
+        {
+            if (CameraToSSR.TryGetValue(cam, out ScreenSpaceReflections ssr))
+            {
+                if (!ssr.scattererOceanEnabled)
+                { 
+                    ssr.scattererOceanEnabled = true;
+                    ssr.RecreateTexturesAndBuffers(1, true);
+                }
+                halfResolution = ssr.useHalfResolutionTracing;
+                return true;
+            }
+
+            halfResolution = false;
+            return false;
+        }
+
+        public static bool UnregisterScattererOceanForCamera(Camera cam)
+        {
+            if (CameraToSSR.TryGetValue(cam, out ScreenSpaceReflections ssr))
+            {
+                ssr.scattererOceanEnabled = false;
+                ssr.RecreateTexturesAndBuffers(1, true);
+                return true;
+            }
+
+            return false;
+        }
+
         Camera targetCamera;
 
         // When VR is enabled we have different commandBuffers per eye
@@ -16,6 +48,10 @@ namespace Deferred
 
         // These textures are flip-flop only
         HistoryManager<RenderTexture> hiZTextures, ssrColor, ssrHitDistance;
+
+        // These textures are only used with the scatterer ocean, the idea is to precombined these textures
+        // Instead of combining them at every tracing/blurring step
+        RenderTexture combinedGBufferAndOceanNormalsAndSmoothness, oceanMask;
 
         public Material ssrMaterial, blurMaterial, generateHiZMaterial;
         public ComputeShader generateHiZComputeShader;
@@ -29,12 +65,14 @@ namespace Deferred
         bool supportVR = false;
         bool useHDR = false;
         bool ssrScreenShotModeEnabled = false;
+        bool scattererOceanEnabled = false;
 
         public static class SsrShaderPassName
         {
             public const int Compose = 0;
             public const int TraceRays = 1;
             public const int ReprojectGbufferShading = 2;
+            public const int CombineGbufferAndOcean = 3;
         }
 
         public static class BlurShaderPassName
@@ -60,6 +98,16 @@ namespace Deferred
 
         private void Start()
         {
+            targetCamera = GetComponent<Camera>();
+            
+            if (CameraToSSR.ContainsKey(targetCamera))
+            {
+                Destroy(this);
+                return;
+            }
+
+            CameraToSSR.Add(targetCamera, this);
+
             ssrMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/ScreenSpaceReflections"]);
             blurMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/Blur"]);
             generateHiZMaterial = new Material(ShaderLoader.DeferredShaders["Deferred/GenerateHiZ"]);
@@ -73,7 +121,6 @@ namespace Deferred
             quadMesh = Mesh.Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
             Destroy(go);
 
-            targetCamera = GetComponent<Camera>();
             RecreateTexturesAndBuffers(1, false);
         }
 
@@ -93,12 +140,12 @@ namespace Deferred
             int tracingWidth = halfResolutionTracing ? cameraWidth / 2 : cameraWidth;
             int tracingHeight = cameraHeight;
 
-            CreateOrResizeRenderTextures(hizMipCount, cameraWidth, cameraHeight, tracingWidth, tracingHeight, supportVR, useHDR, keepScreenHistory);
-            SetShaderProperties(screenMipCount, cameraWidth, cameraHeight, halfResolutionTracing);
-            RecreateCommandBuffers(cameraWidth, cameraHeight, screenMipCount, hizMipCount, halfResolutionTracing);
+            CreateOrResizeRenderTextures(hizMipCount, cameraWidth, cameraHeight, tracingWidth, tracingHeight, supportVR, useHDR, keepScreenHistory, scattererOceanEnabled);
+            SetShaderProperties(screenMipCount, cameraWidth, cameraHeight, halfResolutionTracing, scattererOceanEnabled);
+            RecreateCommandBuffers(cameraWidth, cameraHeight, screenMipCount, hizMipCount, halfResolutionTracing, scattererOceanEnabled);
         }
 
-        private void RecreateCommandBuffers(int cameraWidth, int cameraHeight, int screenMipCount, int hizMipCount, bool halfResolutionTracing)
+        private void RecreateCommandBuffers(int cameraWidth, int cameraHeight, int screenMipCount, int hizMipCount, bool halfResolutionTracing, bool scattererOcean)
         {
             if (ssrCommandBuffer != null)
             {
@@ -106,11 +153,11 @@ namespace Deferred
             }
 
             ssrCommandBuffer = new HistoryManager<CommandBuffer>(false, supportVR, false);
-            ssrCommandBuffer[false, true, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, true, cameraWidth, cameraHeight, halfResolutionTracing);
+            ssrCommandBuffer[false, true, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, true, cameraWidth, cameraHeight, halfResolutionTracing, scattererOcean);
 
             if (supportVR)
             {
-                ssrCommandBuffer[false, false, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, false, cameraWidth, cameraHeight, halfResolutionTracing);
+                ssrCommandBuffer[false, false, 0] = CreateSSRCommandBuffer(screenMipCount, hizMipCount, false, cameraWidth, cameraHeight, halfResolutionTracing, scattererOcean);
             }
 
             if (screenCopyCommandBuffer != null)
@@ -126,7 +173,7 @@ namespace Deferred
             }
         }
 
-        private void SetShaderProperties(int screenMipCount, int cameraWidth, int cameraHeight, bool halfResolutionTracing)
+        private void SetShaderProperties(int screenMipCount, int cameraWidth, int cameraHeight, bool halfResolutionTracing, bool scattererOcean)
         {
             if (halfResolutionTracing)
             {
@@ -139,6 +186,22 @@ namespace Deferred
                 blurMaterial.DisableKeyword("HALF_RESOLUTION_TRACING");
             }
 
+            if (scattererOcean)
+            {
+                ssrMaterial.EnableKeyword("PRECOMBINED_NORMALS_AND_SMOOTHNESS");
+                blurMaterial.EnableKeyword("PRECOMBINED_NORMALS_AND_SMOOTHNESS");
+
+                ssrMaterial.SetTexture("combinedGBufferAndOceanNormalsAndSmoothness", combinedGBufferAndOceanNormalsAndSmoothness);
+                ssrMaterial.SetTexture("oceanMask", oceanMask);
+
+                blurMaterial.SetTexture("combinedGBufferAndOceanNormalsAndSmoothness", combinedGBufferAndOceanNormalsAndSmoothness);
+                blurMaterial.SetTexture("oceanMask", oceanMask);
+            }
+            else
+            {
+                ssrMaterial.DisableKeyword("PRECOMBINED_NORMALS_AND_SMOOTHNESS");
+                blurMaterial.DisableKeyword("PRECOMBINED_NORMALS_AND_SMOOTHNESS");
+            }
 
             ssrMaterial.SetInt("hiZMipLevelCount", screenMipCount);
             ssrMaterial.SetVector("SSRScreenResolution", new Vector2(cameraWidth, cameraHeight));
@@ -148,7 +211,7 @@ namespace Deferred
             blurMaterial.SetTexture("ssrHitDistance", ssrHitDistance[true, false, 0]);
         }
 
-        private CommandBuffer CreateSSRCommandBuffer(int screenMipCount, int hizMipCount, bool isVRRightEye, int cameraWidth, int cameraHeight, bool halfResolutionTracing)
+        private CommandBuffer CreateSSRCommandBuffer(int screenMipCount, int hizMipCount, bool isVRRightEye, int cameraWidth, int cameraHeight, bool halfResolutionTracing, bool scattererOcean)
         {
             CommandBuffer commandBuffer = new CommandBuffer();
             commandBuffer.name = "Deferred ScreenSpace Reflections CommandBuffer";
@@ -156,6 +219,16 @@ namespace Deferred
             GenerateHiZ(hizMipCount, commandBuffer, cameraWidth, cameraHeight);
 
             ReprojectAndBlurScreenTexture(commandBuffer, isVRRightEye, cameraWidth, cameraHeight);
+
+            if (scattererOcean)
+            {
+                // Combine gbuffer info with ocean gbuffer
+                RenderTargetIdentifier[] combinedGbufferTargets = { new RenderTargetIdentifier(combinedGBufferAndOceanNormalsAndSmoothness),
+                                                                    new RenderTargetIdentifier(oceanMask) };
+
+                commandBuffer.SetRenderTarget(combinedGbufferTargets, combinedGBufferAndOceanNormalsAndSmoothness.depthBuffer);
+                commandBuffer.DrawMesh(quadMesh, Matrix4x4.identity, ssrMaterial, 0, SsrShaderPassName.CombineGbufferAndOcean);
+            }
 
             RenderTargetIdentifier[] ssrTargets = { new RenderTargetIdentifier(ssrColor[true, false, 0]),
                                                     new RenderTargetIdentifier(ssrHitDistance[true, false, 0]) };
@@ -196,7 +269,7 @@ namespace Deferred
 
             RenderTexture currentTarget = null;
             RenderTexture previousTarget = null;
-
+            
             for (int iteration = 0; iteration < iterations; iteration++)
             {
                 currentTarget = ssrColor[!useFlip, false, 0];
@@ -226,7 +299,6 @@ namespace Deferred
             }
 
             cb.SetGlobalTexture("ssrOutput", currentTarget);  // TODO: rename property
-            
 
             //cb.SetGlobalTexture("ssrOutput", ssrColor[true, false, 0]);  // TODO: rename property
         }
@@ -261,11 +333,23 @@ namespace Deferred
             }
         }
 
-        private void CreateOrResizeRenderTextures(int hizMipCount, int cameraWidth, int cameraHeight, int tracingWidth, int tracingHeight, bool supportVR, bool useHDR, bool keepScreenHistory)
+        private void CreateOrResizeRenderTextures(int hizMipCount, int cameraWidth, int cameraHeight, int tracingWidth, int tracingHeight, bool supportVR, bool useHDR, bool keepScreenHistory, bool scattererOcean)
         {
             ReleaseRTHistoryManager(hiZTextures);
             ReleaseRTHistoryManager(ssrColor);
             ReleaseRTHistoryManager(ssrHitDistance);
+
+            if (combinedGBufferAndOceanNormalsAndSmoothness != null)
+            {
+                combinedGBufferAndOceanNormalsAndSmoothness.Release();
+                combinedGBufferAndOceanNormalsAndSmoothness = null;
+            }
+
+            if (oceanMask != null)
+            {
+                oceanMask.Release();
+                oceanMask = null;
+            }
 
             hiZTextures = CreateRTHistoryManager(useComputeForHiZ, false, false, cameraWidth / 2, cameraHeight / 2,
                                                     RenderTextureFormat.RFloat, true, FilterMode.Point,0, hizMipCount,
@@ -297,6 +381,14 @@ namespace Deferred
                                      true, FilterMode.Trilinear, 16, hizMipCount + 1);
             }
 
+            if (scattererOcean)
+            { 
+                combinedGBufferAndOceanNormalsAndSmoothness = new RenderTexture(tracingWidth, tracingHeight, 0, RenderTextureFormat.ARGB2101010, 0);
+                oceanMask = new RenderTexture(tracingWidth, tracingHeight, 0, RenderTextureFormat.R8, 0);
+
+                combinedGBufferAndOceanNormalsAndSmoothness.Create();
+                oceanMask.Create();
+            }
         }
 
         void ReprojectAndBlurScreenTexture(CommandBuffer cb, bool isVRRightEye, int cameraWidth, int cameraHeight)
@@ -505,6 +597,8 @@ namespace Deferred
             ReleaseRenderTextures();
 
             RemoveAndReleaseCommandBuffers();
+
+            CameraToSSR.Remove(targetCamera);
         }
 
         private void RemoveAndReleaseCommandBuffers()
@@ -531,6 +625,16 @@ namespace Deferred
             ReleaseRTHistoryManager(ssrHitDistance);
             ReleaseRTHistoryManager(screenColor);
             ReleaseRTHistoryManager(hiZTextures);
+
+            if (combinedGBufferAndOceanNormalsAndSmoothness != null)
+            { 
+                combinedGBufferAndOceanNormalsAndSmoothness.Release();
+            }
+
+            if (oceanMask != null)
+            {
+                oceanMask.Release();
+            }
         }
 
         public int CalculateMipLevel(int textureWidth, int textureHeight, int targetSize)
