@@ -41,8 +41,6 @@
             sampler2D _CameraGBufferTexture1; // alpha = smoothness
             sampler2D _CameraGBufferTexture2; // normal = rgb
 
-            sampler2D oceanGbufferDepth;
-
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -114,24 +112,7 @@
 
                 ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);
 
-#if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
-                float4 ssr = 0.0.xxxx;
-
-                // Read the ocean depth and decide if we use the ocean or not for tracing
-                float oceanZDepth = tex2Dlod(oceanGbufferDepth, i.uv);
-                
-                [branch]
-    #if defined(UNITY_REVERSED_Z)
-                if (oceanZDepth == 0.0)
-    #else 
-                if (oceanZDepth == 1.0)
-                {
-                    ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
-                }
-    #endif      
-#else
                 float4 ssr = ReadSSRResult(i.uv.xy, worldNormal, ssrOutput, _CameraGBufferTexture2);
-#endif
 
                 ssr.a = ssr.a * saturate((smoothness - 0.4) / 0.2); // Smoothly fade out SSR when approaching the cutoff roughness
 
@@ -174,7 +155,6 @@
 
             sampler2D combinedGBufferAndOceanNormalsAndSmoothness;
             sampler2D ScattererDepthCopy;
-            sampler2D oceanMask;
 
             float3 SSRPlanetPosition;
 

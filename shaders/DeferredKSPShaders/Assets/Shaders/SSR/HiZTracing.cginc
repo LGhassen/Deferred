@@ -225,6 +225,8 @@ float3 getPreciseWorldPosFromDepth(float2 uv, float zdepth)
     return (worldPos.xyz / worldPos.w);
 }
 
+sampler2D oceanMask;
+
 float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sampler2D normalsTexture)
 {
 #if defined(HALF_RESOLUTION_TRACING)
@@ -235,7 +237,7 @@ float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sample
 
     uint2 pixelCoords = uv * SSRScreenResolution;
     bool pixelIsEven = pixelCoords.x % 2u == 0u;
-
+    
     if (!pixelIsEven)
     {
         // Check how close are the two normals to each other, if close enough interpolate their SSR, else use the closest
@@ -247,7 +249,7 @@ float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sample
 
         float3 normal0 = normalize(tex2Dlod(normalsTexture, float4(fullUV0, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx);
         float3 normal1 = normalize(tex2Dlod(normalsTexture, float4(fullUV1, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx);
-
+    
         if (dot(normal0, normal1) > 0.99)
         {
             ssrUV =  halfResUV + 0.5 * float2(halfResTexelSize.x, 0);
@@ -262,9 +264,28 @@ float4 ReadSSRResult(float2 uv, float3 worldNormal, sampler2D ssrTexture, sample
         }
     }
 
-    return tex2Dlod(ssrTexture, float4(ssrUV, 0.0, 0.0));
+    #if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+        bool notOcean = tex2Dlod(oceanMask, float4(ssrUV, 0.0, 0.0)).r < 0.5;
+    #endif
+    
+    float4 ssr = tex2Dlod(ssrTexture, float4(ssrUV, 0.0, 0.0));
+    
+    #if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+        ssr = notOcean ? ssr : 0.0.xxxx;
+    #endif    
+
+    return ssr;
 #else
-    return tex2Dlod(ssrTexture, float4(uv, 0.0, 0.0));
+    
+    float4 ssr = tex2Dlod(ssrTexture, float4(uv, 0.0, 0.0));
+    
+    #if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+        bool notOcean = tex2Dlod(oceanMask, float4(uv, 0.0, 0.0)).r < 0.5;
+        ssr = notOcean? ssr : 0.0.xxxx;
+    #endif
+    
+    return ssr;
+    
 #endif 
 }
 

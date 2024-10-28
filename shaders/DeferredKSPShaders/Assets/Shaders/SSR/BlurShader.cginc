@@ -58,7 +58,6 @@ sampler2D ssrHitDistance;
 
 sampler2D combinedGBufferAndOceanNormalsAndSmoothness;
 sampler2D ScattererDepthCopy;
-sampler2D oceanMask;
 
 float4 normalsAwareBlurFrag(v2f i) : SV_Target
 {
