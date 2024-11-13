@@ -65,6 +65,10 @@ void DeferredSpecularReplacementShader(Input i, inout SurfaceOutputStandardSpecu
     
     float4 color = _Color * vertexColor * _BurnColor * tex2D(_MainTex, (i.uv_MainTex));
     
+#if defined(CUTOUT_ON)
+    clip(color.a - _Cutoff);
+#endif
+    
 #if defined (NORMALMAP_ON)
     float3 normal = UnpackNormalDXT5nm(tex2D(_BumpMap, i.uv_BumpMap));
 #else

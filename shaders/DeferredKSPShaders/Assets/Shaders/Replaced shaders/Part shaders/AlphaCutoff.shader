@@ -1,4 +1,4 @@
-﻿Shader "KSP/Specular (Cutoff)"
+﻿Shader "KSP/Alpha/Cutoff"
 {    
     Properties 
     {
@@ -6,6 +6,7 @@
         _BumpMap("Normal Map", 2D) = "bump" {}
         _Shininess ("Shininess", Range (0.0, 1.0)) = 0.5
         _Color ("Part Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        _Cutoff("Alpha cutoff", Range(0,1)) = 0.5
         _SpecColor ("Specular Color", Color) = (0.5, 0.5, 0.5, 1.0)
         _EmissiveColor("Emissive Color", Color) = (0.0, 0.0, 0.0, 1.0)
         [PerRendererData]_RimFalloff("Rim Falloff", Range(0.0, 10.0) ) = 0.1
@@ -17,7 +18,7 @@
 
     SubShader 
     {
-        Tags { "Queue" = "AlphaTest" "RenderType"="Opaque" }
+        Tags { "Queue" = "AlphaTest" "RenderType" = "TransparentCutout" }
 
         Stencil
         {
@@ -28,9 +29,8 @@
 
         CGPROGRAM
 
-        #define SPECULAR_ON
         #define IGNORE_VERTEX_COLOR_ON
-        #define DISSOLVE_FADE_ON
+        #define CUTOUT_ON
 
         #include "../ReplacementShader.cginc" //exclude_path:forward
 		#pragma surface DeferredSpecularReplacementShader StandardSpecular 
