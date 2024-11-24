@@ -247,7 +247,7 @@ void DeferredTerrainReplacementShader(Input i, inout SurfaceOutputStandard o)
 #if defined(ATLAS_TEXTUREARRAY_ON)
     // Since the atlas shader is only used on stock Kerbin, and not adopted by modders
     // We can use different color blending that looks better
-    diffuse.rgb *= 1.25 * i.vertexColor.rgb;
+    diffuse.rgb *= 1.75 * i.vertexColor.rgb;
 #else
     // Approximates stock look for the most part, only a little bit off
     diffuse.rgb = lerp(i.vertexColor.rgb, i.vertexColor.rgb * diffuse.rgb, 0.8).rgb;
