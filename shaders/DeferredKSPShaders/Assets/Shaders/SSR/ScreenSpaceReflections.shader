@@ -190,7 +190,15 @@
             {
                 // Could simplify these and get the camera Pos directly
                 float3 cameraSpacePos = mul(UNITY_MATRIX_V, float4(worldPos, 1.0));
-                float3 cameraSpacePos2 = mul(UNITY_MATRIX_V, float4(worldPos + worldReflectionVector * 10.0, 1.0));
+
+                // We can't transform the direction directly to texture space because it involves
+                // a non-linear transformation. Use an offset to calculate the position in texture
+                // A small value causes jitter while a large value clips the near plane and freaks out
+                // (ndc w turns negative and all precision breaks)
+                // Cap it to a value of 10, and when closer make it small enough to not intersect the near plane
+                float offset = min(10.0, length(cameraSpacePos) * 0.5);
+
+                float3 cameraSpacePos2 = mul(UNITY_MATRIX_V, float4(worldPos + worldReflectionVector * offset, 1.0));
 
                 
                 textureSpacePos = mul(textureSpaceProjectionMatrix, float4(cameraSpacePos, 1.0));
