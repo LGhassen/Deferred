@@ -52,7 +52,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | B9 Procedural Wings | Compatible since version 0.46.0
 | Scatterer | Compatible |
 | EVE-Redux | Compatible |
-| Volumetric clouds (and related Scatterer versions) | Fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing), or full updated downloads are provided on Patreon if you still have access. v1 and v2 appear to be compatible |
+| Volumetric clouds (and related Scatterer versions) | Compatible using the latest versions (latest hotfix of v4). Earlier versions of v4 and v3 have fixed individual DLLs [can be downloaded here for v3 and v4](https://drive.google.com/drive/folders/1lkJWJ6qfWLdJt2ZYjTYuOQk3dO7zxMCb?usp=sharing). v1 and v2 appear to be compatible |
 | TUFX | Compatible
 | Kopernicus | Compatible
 | Waterfall | Compatible
