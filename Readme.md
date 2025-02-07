@@ -46,6 +46,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 
 | Mod  | Status | Notes |
 | ------------- | ------------- |------------- |
+| Firefly  | Compatible |
 | Textures Unlimited  |	Compatible since version 1.6.0.26 on CKAN or [github](https://github.com/KSPModStewards/TexturesUnlimited/releases) |	|
 | Parallax  | Compatible since version 2.0.8 |
 | Conformal decals  | Renders in forward in 0.2.14, older versions incompatible |
