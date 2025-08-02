@@ -81,8 +81,7 @@ namespace Deferred
                     firstLocalCamera.gameObject.AddComponent<RefreshLegacyAmbient>();
                 }
 
-                // TODO: look into OpenGL support or disable it entirely
-                if (settings.useScreenSpaceReflections)
+                if (settings.useScreenSpaceReflections && RenderingUtils.IsUnifiedCameraMode())
                 { 
                     var screenSpaceReflections = firstLocalCamera.GetComponent<ScreenSpaceReflections>();
 
