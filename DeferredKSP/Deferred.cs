@@ -28,10 +28,6 @@ namespace Deferred
             // TODO: maybe remove this? Might affect any forward cameras
             QualitySettings.pixelLightCount = Math.Max(GameSettings.LIGHT_QUALITY, 64);
 
-            GameSettings.REFLECTION_PROBE_REFRESH_MODE = Math.Max(GameSettings.REFLECTION_PROBE_REFRESH_MODE, 1);
-            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Max(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 0);
-            GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = Math.Min(GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION, 4);
-
             if (settings.useDitheredTransparency)
             { 
                 Shader.SetGlobalTexture("_DeferredDitherBlueNoise", ShaderLoader.LoadedTextures["DeferredDitherBlueNoise"]);
@@ -145,6 +141,25 @@ namespace Deferred
                         probeComponent.size = new Vector3(size, size, size);
                     }
                 }
+            }
+
+            bool overrodeReflectionProbeSettings = false;
+
+            if (settings.capReflectionProbeRefreshRate && GameSettings.REFLECTION_PROBE_REFRESH_MODE > 1)
+            {
+                GameSettings.REFLECTION_PROBE_REFRESH_MODE = 1;
+                overrodeReflectionProbeSettings = true;
+            }
+
+            if (settings.capReflectionProbeResolution && GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION > 1)
+            {
+                GameSettings.REFLECTION_PROBE_TEXTURE_RESOLUTION = 1;
+                overrodeReflectionProbeSettings = true;
+            }
+
+            if (overrodeReflectionProbeSettings)
+            {
+                FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
             }
         }
 

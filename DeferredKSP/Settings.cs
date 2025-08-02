@@ -16,6 +16,9 @@ namespace Deferred
         [Persistent] public bool useScreenSpaceReflections = true;
         [Persistent] public bool useHalfResolutionScreenSpaceReflections = true;
 
+        [Persistent] public bool capReflectionProbeRefreshRate = true;
+        [Persistent] public bool capReflectionProbeResolution = true;
+
         public static Settings LoadSettings()
         {
             UrlDir.UrlConfig[] configs = GameDatabase.Instance.GetConfigs("Deferred");
