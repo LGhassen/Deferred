@@ -317,12 +317,18 @@ namespace Deferred
         int windowId;
         Rect windowRect = new Rect(20, 50, 200, 150);
 
+        bool guiKeyWasPressed = false;
+
         void OnGUI()
         {
-            if (Input.GetKey(settings.guiModifierKey) && Input.GetKey(settings.guiKey))
+            bool guiKeyPressed = Input.GetKey(settings.guiModifierKey1) && Input.GetKey(settings.guiModifierKey2) && Input.GetKey(settings.guiKey);
+
+            if (!guiKeyWasPressed && guiKeyPressed)
             {
-                showUI = true;
+                showUI = !showUI;
             }
+
+            guiKeyWasPressed = guiKeyPressed;
 
             if (showUI)
             {

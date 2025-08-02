@@ -10,8 +10,9 @@ namespace Deferred
         [Persistent] public bool useSmaaInEditors = true;
         [Persistent] public bool useDitheredTransparency = false;
         
-        [Persistent] public KeyCode guiModifierKey;
-        [Persistent] public KeyCode guiKey;
+        [Persistent] public KeyCode guiModifierKey1 = KeyCode.LeftControl;
+        [Persistent] public KeyCode guiModifierKey2 = KeyCode.LeftAlt;
+        [Persistent] public KeyCode guiKey = KeyCode.D;
 
         [Persistent] public bool useScreenSpaceReflections = true;
         [Persistent] public bool useHalfResolutionScreenSpaceReflections = true;

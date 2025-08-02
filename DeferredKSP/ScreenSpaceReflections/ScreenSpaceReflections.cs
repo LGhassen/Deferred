@@ -131,7 +131,6 @@ namespace Deferred
 
             GetCameraRenderDimensions(targetCamera, out int cameraWidth, out int cameraHeight);
 
-
             int screenMipCount = CalculateMipLevel(cameraWidth, cameraHeight, 8);
             int hizMipCount = screenMipCount - 1; // Don't copy the built-in camera depth texture into mip 0, reuse it to save one mip
 
