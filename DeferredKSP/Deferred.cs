@@ -209,6 +209,14 @@ namespace Deferred
                 }
 
                 mat.renderQueue = originalRenderqueue;
+
+                
+                if (mat.shader.name.Contains("KSP/Scenery/Decal/Blended"))
+                {
+                    // Fix the fake AO on the VAB that is visible through clouds
+                    mat.renderQueue = 2700;
+                }
+                
             }
         }
 
