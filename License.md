@@ -1,4 +1,4 @@
- Copyright (c) 2024 Ghassen Lahmar
+ Copyright (c) 2024-2025 Ghassen Lahmar
  
  You may use, distribute and copy Deferred under the terms of GNU General
  Public License version 3, which is displayed below.
