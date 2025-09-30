@@ -476,7 +476,6 @@ namespace Deferred
         private void GenerateHiZWithCompute(CommandBuffer cb, int hizMipCount, int cameraWidth, int cameraHeight)
         {
             Vector2 currentMipLevelDimensions = new Vector2(cameraWidth, cameraHeight);
-            Vector2 previousMipLevelDimensions = currentMipLevelDimensions;
 
             cb.SetComputeIntParam(generateHiZComputeShader, "usingReverseZ", SystemInfo.usesReversedZBuffer ? 1 : 0);
             cb.SetComputeIntParam(generateHiZComputeShader, "firstIteration", 1);
@@ -485,7 +484,7 @@ namespace Deferred
 
             for (int currentMipLevel = 0; currentMipLevel < hizMipCount; currentMipLevel++)
             {
-                previousMipLevelDimensions = currentMipLevelDimensions;
+                Vector2 previousMipLevelDimensions = currentMipLevelDimensions;
                 currentMipLevelDimensions = new Vector2((int)(currentMipLevelDimensions.x / 2f), (int)(currentMipLevelDimensions.y / 2f));
 
                 cb.SetComputeTextureParam(generateHiZComputeShader, 0, "WriteRT", hiZTextures[true, false, 0], currentMipLevel);
@@ -505,6 +504,9 @@ namespace Deferred
         }
 
         public static readonly int useSSROnCurrentCamera = Shader.PropertyToID("useSSROnCurrentCamera");
+        public static readonly int SSRPlanetPosition = Shader.PropertyToID("SSRPlanetPosition");
+        public static readonly int textureSpaceProjectionMatrixProperty = Shader.PropertyToID("textureSpaceProjectionMatrix");
+        
 
         void OnPreRender()
         {
@@ -516,10 +518,8 @@ namespace Deferred
             }
 
             if (FlightGlobals.currentMainBody != null)
-                Shader.SetGlobalVector("SSRPlanetPosition", FlightGlobals.currentMainBody.transform.position);
+                Shader.SetGlobalVector(SSRPlanetPosition, FlightGlobals.currentMainBody.transform.position);
             
-
-
             // At the moment SSR doesn't work correctly in screenshots, the hit distances are wrong and there
             // are gaps in the intersections, maybe some issue with the projection matrix
             // I also disabled screenshot supersizing for now because the reprojected history is low-res
@@ -572,7 +572,7 @@ namespace Deferred
                 Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cameraProjectionMatrix, false);
                 textureSpaceProjectionMatrix *= projectionMatrix;
 
-                ssrMaterial.SetMatrix("textureSpaceProjectionMatrix", textureSpaceProjectionMatrix); // maybe just do these in shader?
+                ssrMaterial.SetMatrix(textureSpaceProjectionMatrixProperty, textureSpaceProjectionMatrix);
             }
         }
 
