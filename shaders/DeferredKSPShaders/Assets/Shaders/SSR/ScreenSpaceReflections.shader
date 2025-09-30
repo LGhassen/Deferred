@@ -200,7 +200,6 @@
 
                 float3 cameraSpacePos2 = mul(UNITY_MATRIX_V, float4(worldPos + worldReflectionVector * offset, 1.0));
 
-                
                 textureSpacePos = mul(textureSpaceProjectionMatrix, float4(cameraSpacePos, 1.0));
                 textureSpacePos /= textureSpacePos.w;
 
@@ -342,6 +341,22 @@
 
                 float dotVN = saturate(dot(-viewVector, worldNormal));
                 float hitDistance = distance(hitPos.xy, textureSpacePos.xy);
+
+                [branch]
+                if (confidence > 0.0 && hitDistance <= 0.005)
+                {
+                    // If we only travelled a short distance, get normals at hit and check they are different from starting surface normals,
+                    // or else it's likely the same reflective surface we started from which can't be resolved correctly
+                    // This happens a lot on minmus flats with Parallax-Continued and causes reflections to blow up to white
+                    #if defined(PRECOMBINED_NORMALS_AND_SMOOTHNESS)
+                        float3 hitNormal = UnpackNormalCustomEncoding(tex2Dlod(combinedGBufferAndOceanNormalsAndSmoothness, float4(hitPos.xy, 0.0, 0.0)));
+                    #else
+                        float3 hitNormal = tex2Dlod(_CameraGBufferTexture2, float4(hitPos.xy, 0.0, 0.0)).rgb * 2.0 - 1.0.xxx;
+                    #endif
+
+                    float normalsConfidence = 1.0 - saturate((dot(hitNormal, worldNormal) - 0.98) / 0.01);
+                    confidence *= normalsConfidence;
+                }
 
                 float2 ddx, ddy;
                 float ssrMipLevel = GetConeMipLevelAndAnisotropicDerivatives(hitDistance, textureSpaceReflectionDirection, smoothness, dotVN, ddx, ddy);
