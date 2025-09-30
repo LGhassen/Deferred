@@ -144,9 +144,14 @@ namespace Deferred
 
             bool overrodeReflectionProbeSettings = false;
 
-            if (settings.capReflectionProbeRefreshRate && GameSettings.REFLECTION_PROBE_REFRESH_MODE > 1)
+            if ((settings.capReflectionProbeRefreshRate && GameSettings.REFLECTION_PROBE_REFRESH_MODE > 1) ||
+                GameSettings.REFLECTION_PROBE_REFRESH_MODE < 1)
             {
+
+                GameSettings.REFLECTION_PROBE_REFRESH_MODE = 2;
+                FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
                 GameSettings.REFLECTION_PROBE_REFRESH_MODE = 1;
+                FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
                 overrodeReflectionProbeSettings = true;
             }
 
@@ -160,6 +165,7 @@ namespace Deferred
             {
                 FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
             }
+
         }
 
         private void EnableDeferredShadingOnCamera(Camera camera)
