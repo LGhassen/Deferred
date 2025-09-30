@@ -40,6 +40,7 @@ CGPROGRAM
 #include "UnityStandardUtils.cginc"
 #include "UnityGBuffer.cginc"
 #include "UnityStandardBRDF.cginc"
+#include "../IsNan.cginc"
 
 sampler2D _CameraGBufferTexture0;
 sampler2D _CameraGBufferTexture1;
@@ -77,6 +78,8 @@ half4 CalculateLight (unity_v2f_deferred i)
     ind.specular = 0;
 
     half4 res = UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind);
+
+    res = IsNanFloat4(res) ? 0.0.xxxx : res;
 
     return res;
 }

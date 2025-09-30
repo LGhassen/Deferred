@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.3.0")]
+[assembly: AssemblyVersion("1.3.1")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
@@ -147,7 +147,6 @@ namespace Deferred
             if ((settings.capReflectionProbeRefreshRate && GameSettings.REFLECTION_PROBE_REFRESH_MODE > 1) ||
                 GameSettings.REFLECTION_PROBE_REFRESH_MODE < 1)
             {
-
                 GameSettings.REFLECTION_PROBE_REFRESH_MODE = 2;
                 FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
                 GameSettings.REFLECTION_PROBE_REFRESH_MODE = 1;

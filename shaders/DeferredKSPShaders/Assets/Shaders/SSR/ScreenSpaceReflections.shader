@@ -401,6 +401,7 @@
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "../IsNan.cginc"
 
             #pragma multi_compile ___ PRECOMBINED_NORMALS_AND_SMOOTHNESS
 
@@ -448,6 +449,8 @@
 #endif
 
 
+                float4 result;
+
 #if defined(UNITY_REVERSED_Z)
                 if (zdepth == 0.0)
 #else
@@ -457,13 +460,18 @@
                     // Sky and clouds don't reproject well because of frequent occlusions/disocclusions
                     // by other objects. At this point they are already fully rendered, unlike other transparencies,
                     // no need to reproject them and the game doesn't have a lot more particles/transparencies
-                    return tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
+                    result = tex2Dlod(currentFrameColor, float4(i.uv.xy, 0.0, 0.0));
+                }
+                else
+                {
+                    // At the moment just doing a "dumb" reprojection without any kind of disocclusion
+                    // checks or neighborhood clipping and didn't notice any issues, will adjust as needed
+                    // using motion and the current frame (lacking reflections and transparencies)
+                    result = tex2Dlod(lastFrameColor, float4(uv, 0.0, 0.0));
                 }
 
-                // At the moment just doing a "dumb" reprojection without any kind of disocclusion
-                // checks or neighborhood clipping and didn't notice any issues, will adjust as needed
-                // using motion and the current frame (lacking reflections and transparencies)
-                return tex2Dlod(lastFrameColor, float4(uv, 0.0, 0.0));
+                result = IsNanFloat4(result) ? 0.0.xxxx : result;
+                return result;
             }
 
             ENDCG
