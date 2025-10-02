@@ -146,6 +146,7 @@
             #include "UnityPBSLighting.cginc"
             #include "HiZTracing.cginc"
             #include "ConeUtils.cginc"
+            #include "../IsNan.cginc"
 
             Texture2D SSRScreenColor;
             SamplerState sampler_trilinear_clamp;
@@ -381,6 +382,9 @@
 
                     hitDistance = 1.0;
                 }
+
+                color = IsNanFloat3(color) ? 0.0.xxx : color;
+                hitDistance = IsNanFloat(hitDistance) ? 0.0 : hitDistance;
 
                 fout output;
                 output.colorAndConfidence = float4(color, confidence);

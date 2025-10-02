@@ -55,6 +55,7 @@ sampler2D ssrHitDistance;
 
 #include "HiZtracing.cginc"
 #include "ConeUtils.cginc"
+#include "../IsNan.cginc"
 
 sampler2D combinedGBufferAndOceanNormalsAndSmoothness;
 sampler2D ScattererDepthCopy;
@@ -159,6 +160,7 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
 
     if (blurStrength < 0.001)
     {
+        centerColor = IsNanFloat4(centerColor) ? 0.0.xxxx : centerColor;
         return centerColor;
     }
 
@@ -231,6 +233,8 @@ float4 normalsAwareBlurFrag(v2f i) : SV_Target
 
     // Smoothly fade to perfect mirror reflections
     color = lerp(color, centerColor, saturate((smoothness - 0.92) / 0.04));
+    
+    color = IsNanFloat4(color) ? 0.0.xxxx : color;
     
     return color;
 }
