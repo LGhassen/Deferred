@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.3.2")]
+[assembly: AssemblyVersion("1.3.3")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred

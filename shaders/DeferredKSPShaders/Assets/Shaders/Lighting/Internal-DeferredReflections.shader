@@ -30,6 +30,7 @@ sampler2D _CameraGBufferTexture1;
 sampler2D _CameraGBufferTexture2;
 
 int useReflectionProbeOnCurrentCamera;
+int disableProbeReflectionsOnCurrentCamera;
 int useSSROnCurrentCamera;
 float deferredAmbientBrightness, deferredAmbientTint;
 float4x4 internalSpaceToWorld; // Transform from internal space to world if on IVA camera, identity matrix otherwise
@@ -96,7 +97,7 @@ half4 frag (unity_v2f_deferred i) : SV_Target
     #endif
 
     [branch]
-    if (useSSROnCurrentCamera == 0.0)
+    if (useSSROnCurrentCamera == 0.0 && disableProbeReflectionsOnCurrentCamera == 0.0)
     {
         Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(data.smoothness, d.worldViewDir, data.normalWorld, data.specularColor);
         ind.specular = UnityGI_IndirectSpecular(d, data.occlusion, g);

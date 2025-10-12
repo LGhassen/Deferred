@@ -8,7 +8,7 @@ namespace Deferred
 {
 	public class DeferredReflectionProbeChecker : MonoBehaviour
 	{
-		Dictionary<Camera,DeferredReflectionProbeFixer> camToFixer =  new Dictionary<Camera,DeferredReflectionProbeFixer>() ;
+		Dictionary<Camera, DeferredReflectionProbeFixer> camToFixer =  new Dictionary<Camera,DeferredReflectionProbeFixer>() ;
 
 		public void OnWillRenderObject()
 		{
@@ -50,8 +50,10 @@ namespace Deferred
 
     public class DeferredReflectionProbeFixer : MonoBehaviour
     {
-
         Camera reflectionProbeCamera;
+
+        // Also disable reflection probe reflections from rendering in the reflections, they can add up and cause weirdness
+        public static readonly int DisableProbeReflectionsOnCurrentCamera = Shader.PropertyToID("disableProbeReflectionsOnCurrentCamera");
 
         public void Awake()
         {
@@ -61,6 +63,16 @@ namespace Deferred
         public void OnPreCull()
         {
             reflectionProbeCamera.renderingPath = RenderingPath.DeferredShading;
+        }
+
+        void OnPreRender()
+        {
+            Shader.SetGlobalInt(DisableProbeReflectionsOnCurrentCamera, 1);
+        }
+
+        void OnPostRender()
+        {
+            Shader.SetGlobalInt(DisableProbeReflectionsOnCurrentCamera, 0);
         }
     }
 }
