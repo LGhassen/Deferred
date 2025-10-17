@@ -135,7 +135,6 @@ namespace Deferred
             probe.refreshMode = UnityEngine.Rendering.ReflectionProbeRefreshMode.ViaScripting;
 
             probe.hdr = true;
-            probe.intensity = 1.25f; // Make reflections brighter for punchier ambient and reflections
 
             probe.enabled = true;
             probe.RenderProbe();
