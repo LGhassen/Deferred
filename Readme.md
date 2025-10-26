@@ -9,7 +9,7 @@ Get [CKAN](https://github.com/KSP-CKAN/CKAN/releases) and use it to install Defe
 ## Manual installation
 Go to [releases](https://github.com/LGhassen/Deferred/releases) and grab the latest .zip. Unzip it, merge the provided GameData folder with your game's GameData folder (typically **C:\Program Files\Steam\SteamApps\common\Kerbal Space Program\GameData**).
 
-Get the latest version of [Shabby](https://archive.org/search?query=creator:%22taniwha%22%20shabby) and install it in the same way.
+Get the latest version of [Shabby](https://github.com/KSPModdingLibs/Shabby/releases) and install it in the same way.
 
 Get the latest version of [HarmonyKSP](https://github.com/KSPModdingLibs/HarmonyKSP) and install it in the same way.
 
