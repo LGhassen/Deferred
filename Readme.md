@@ -76,7 +76,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 
 
 # Debug menu
-Using control + d (keys configurable) will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
+Using control + alt + d (keys configurable) will bring up a simple debug menu cycling between the contents of the g-buffer (albedo, normals, smoothness, specularColor, occlusion) and a composite of the emission+calculated ambient
 
 Transparencies and incompatible forward shaders will render on top of the debug visualization, ignoring the g-buffer mode selected. This can also be used to identify incompatible/forward shaders (ignoring transparencies)
 
