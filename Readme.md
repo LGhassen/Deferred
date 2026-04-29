@@ -67,7 +67,7 @@ Mods that say "renders in forward" means they may appear to render correctly but
 | PlanetShine | Compatible, but obsolete at default settings. Use if you have custom settings, want more control over lighting and know what you are doing
 | RasterPropMonitor | Compatible since version 1.0.1
 | ASET IVA Props and related mods | Compatible, use the latest official version of RPM, otherwise black outline around labels
-| Magpie Mods | If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772)
+| Magpie Mods |  If you must use it, get latest compatible TU version then [replace deprecated shaders in configs](https://forum.kerbalspaceprogram.com/topic/192310-magpie-mods/?do=findComment&comment=4410772) or use the [unofficial reworked version](https://github.com/lukeburton00/Magpie-Mods-Remodded) (Recommended)
 | FreeIVA | Fully compatible since version 0.2.19.0, versions before that have other parts of the craft appear hollow when seen through windows
 | Shaddy | Renders in forward
 | NeptuneCamera  | Compatible since 4.3, previous versions incompatible
