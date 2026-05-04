@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.SceneManagement;
 
-[assembly: AssemblyVersion("1.3.4")]
+[assembly: AssemblyVersion("1.3.5")]
 [assembly: KSPAssemblyDependency("0Harmony", 0, 0)]
 [assembly: KSPAssemblyDependency("Shabby", 0, 0)]
 namespace Deferred
@@ -127,20 +127,7 @@ namespace Deferred
 
         private void HandleStockProbe()
         {
-            var flightCamera = FlightCamera.fetch;
-            if (flightCamera != null)
-            {
-                var reflectionProbe = flightCamera.reflectionProbe;
-                if (reflectionProbe != null)
-                {
-                    var probeComponent = reflectionProbe.probeComponent;
-                    if  (probeComponent != null)
-                    {
-                        float size = Mathf.Max(1000000f, probeComponent.size.x);
-                        probeComponent.size = new Vector3(size, size, size);
-                    }
-                }
-            }
+            EnsureReflectionProbeRange();
 
             bool overrodeReflectionProbeSettings = false;
 
@@ -163,6 +150,22 @@ namespace Deferred
                 FlightCamera.fetch.reflectionProbe.OnSettingsUpdate();
             }
 
+        }
+
+        void Update()
+        {
+            // Hack: Outdated mods may resize this at any moment, do this every frame to be sure
+            EnsureReflectionProbeRange();
+        }
+
+        private static void EnsureReflectionProbeRange()
+        {
+            var probeComponent = FlightCamera.fetch?.reflectionProbe?.probeComponent;
+            if (probeComponent != null)
+            {
+                float size = Mathf.Max(1000000f, probeComponent.size.x);
+                probeComponent.size = new Vector3(size, size, size);
+            }
         }
 
         private void EnableDeferredShadingOnCamera(Camera camera)
